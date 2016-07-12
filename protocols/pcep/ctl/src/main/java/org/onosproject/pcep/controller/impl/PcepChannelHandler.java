@@ -152,66 +152,69 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
 
                     h.pcepPacketStats.addInPacket();
                     PcepOpenMsg pOpenmsg = (PcepOpenMsg) m;
-                        //Do Capability negotiation.
-                        h.capabilityNegotiation(pOpenmsg);
-                        log.debug("Sending handshake OPEN message");
-                        h.sessionId = pOpenmsg.getPcepOpenObject().getSessionId();
-                        h.pcepVersion = pOpenmsg.getPcepOpenObject().getVersion();
 
-                        //setting keepalive and deadTimer
-                        byte yKeepalive = pOpenmsg.getPcepOpenObject().getKeepAliveTime();
-                        byte yDeadTimer = pOpenmsg.getPcepOpenObject().getDeadTime();
-                        h.keepAliveTime = yKeepalive;
-                        if (yKeepalive < yDeadTimer) {
-                            h.deadTime = yDeadTimer;
+                    //Do Capability negotiation.
+                    h.capabilityNegotiation(pOpenmsg);
+                    log.info("Sending handshake OPEN message");
+                    h.sessionId = pOpenmsg.getPcepOpenObject().getSessionId();
+                    h.pcepVersion = pOpenmsg.getPcepOpenObject().getVersion();
+
+                    //setting keepalive and deadTimer
+                    byte yKeepalive = pOpenmsg.getPcepOpenObject().getKeepAliveTime();
+                    byte yDeadTimer = pOpenmsg.getPcepOpenObject().getDeadTime();
+                    h.keepAliveTime = yKeepalive;
+                    if (yKeepalive < yDeadTimer) {
+                        h.deadTime = yDeadTimer;
+                    } else {
+                        if (DEADTIMER_MAXIMUM_VALUE > (yKeepalive * KEEPALIVE_MULTIPLE_FOR_DEADTIMER)) {
+                            h.deadTime = (byte) (yKeepalive * KEEPALIVE_MULTIPLE_FOR_DEADTIMER);
                         } else {
-                            if (DEADTIMER_MAXIMUM_VALUE > (yKeepalive * KEEPALIVE_MULTIPLE_FOR_DEADTIMER)) {
-                                h.deadTime = (byte) (yKeepalive * KEEPALIVE_MULTIPLE_FOR_DEADTIMER);
-                            } else {
-                                h.deadTime = DEADTIMER_MAXIMUM_VALUE;
-                            }
+                            h.deadTime = DEADTIMER_MAXIMUM_VALUE;
                         }
+                    }
 
-                        /*
-                         * If MPLS LSR id and PCEP session socket IP addresses are not same,
-                         * the MPLS LSR id will be encoded in separate TLV.
-                         * We always maintain session information based on LSR ids.
-                         * The socket IP is stored in channel.
-                         */
-                        LinkedList<PcepValueType> optionalTlvs = pOpenmsg.getPcepOpenObject().getOptionalTlv();
-                        if (optionalTlvs != null) {
-                            for (PcepValueType optionalTlv : optionalTlvs) {
-                                if (optionalTlv instanceof NodeAttributesTlv) {
-                                    List<PcepValueType> subTlvs = ((NodeAttributesTlv) optionalTlv)
-                                            .getllNodeAttributesSubTLVs();
-                                    if (subTlvs == null) {
+                    /*
+                     * If MPLS LSR id and PCEP session socket IP addresses are not same,
+                     * the MPLS LSR id will be encoded in separate TLV.
+                     * We always maintain session information based on LSR ids.
+                     * The socket IP is stored in channel.
+                     */
+                    LinkedList<PcepValueType> optionalTlvs = pOpenmsg.getPcepOpenObject().getOptionalTlv();
+                    if (optionalTlvs != null) {
+                        for (PcepValueType optionalTlv : optionalTlvs) {
+                            if (optionalTlv instanceof NodeAttributesTlv) {
+                                List<PcepValueType> subTlvs = ((NodeAttributesTlv) optionalTlv)
+                                        .getllNodeAttributesSubTLVs();
+                                if (subTlvs == null) {
+                                    continue;
+                                }
+                                for (PcepValueType subTlv : subTlvs) {
+                                    if (subTlv instanceof IPv4RouterIdOfLocalNodeSubTlv) {
+                                        h.thispccId = PccId.pccId(IpAddress
+                                                .valueOf(((IPv4RouterIdOfLocalNodeSubTlv) subTlv).getInt()));
                                         break;
                                     }
-                                    for (PcepValueType subTlv : subTlvs) {
-                                        if (subTlv instanceof IPv4RouterIdOfLocalNodeSubTlv) {
-                                            h.thispccId = PccId.pccId(IpAddress
-                                                    .valueOf(((IPv4RouterIdOfLocalNodeSubTlv) subTlv).getInt()));
-                                            break;
-                                        }
-                                    }
-                                    break;
                                 }
-                            }
-                        }
-
-                        if (h.thispccId == null) {
-                            final SocketAddress address = h.channel.getRemoteAddress();
-                            if (!(address instanceof InetSocketAddress)) {
-                                throw new IOException("Invalid client connection. Pcc is indentifed based on IP");
+                                continue;
                             }
 
-                            final InetSocketAddress inetAddress = (InetSocketAddress) address;
-                            h.thispccId = PccId.pccId(IpAddress.valueOf(inetAddress.getAddress()));
+
+                        }
+                    }
+
+                    if (h.thispccId == null) {
+                        final SocketAddress address = h.channel.getRemoteAddress();
+                        if (!(address instanceof InetSocketAddress)) {
+                            throw new IOException("Invalid client connection. Pcc is indentifed based on IP");
                         }
 
-                        h.sendHandshakeOpenMessage();
-                        h.pcepPacketStats.addOutPacket();
-                        h.setState(KEEPWAIT);
+                        final InetSocketAddress inetAddress = (InetSocketAddress) address;
+                        h.thispccId = PccId.pccId(IpAddress.valueOf(inetAddress.getAddress()));
+                    }
+
+                    h.sendHandshakeOpenMessage();
+                    h.pcepPacketStats.addOutPacket();
+                    h.setState(KEEPWAIT);
                 }
             }
         },
@@ -390,6 +393,10 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
                 channel.close();
                 state = ChannelState.INIT;
                 return;
+            } else if (ChannelState.ESTABLISHED == state) {
+                log.info("ReadTimeoutException in established state, closing the session");
+                channel.close();
+                state = ChannelState.INIT;
             }
         } else if (e.getCause() instanceof ClosedChannelException) {
             log.debug("Channel for pc {} already closed", getClientInfoString());
@@ -535,15 +542,25 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
      * @throws IOException,PcepParseException
      */
     private void sendHandshakeOpenMessage() throws IOException, PcepParseException {
+        LinkedList<PcepValueType> llAdditionalTlv = null;
         PcepOpenObject pcepOpenobj = factory1.buildOpenObject()
                 .setSessionId(sessionId)
                 .setKeepAliveTime(keepAliveTime)
                 .setDeadTime(deadTime)
                 .build();
+
+        LinkedList<PcepValueType> llOptionalTlv = pcepOpenobj.getOptionalTlv();
+        llOptionalTlv.addAll(llAdditionalTlv);
+
+        pcepOpenobj.setOptionalTlv(llOptionalTlv);
+
         PcepMessage msg = factory1.buildOpenMsg()
                 .setPcepOpenObj(pcepOpenobj)
                 .build();
-        log.debug("Sending OPEN message to {}", channel.getRemoteAddress());
+
+        log.info("Sending OPEN message to {}", channel.getRemoteAddress()
+                + " Pcc: " + this.thispccId.ipAddress().toString());
+        //log.info("with label db version: " + dbVer);
         channel.write(Collections.singletonList(msg));
     }
 
@@ -555,6 +572,8 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
         boolean pcInstantiationCapability = false;
         boolean labelStackCapability = false;
         boolean srCapability = false;
+        boolean incLblDbVerCapability = false;
+        boolean deltaLblSyncCapability = false;
 
         ListIterator<PcepValueType> listIterator = tlvList.listIterator();
         while (listIterator.hasNext()) {
@@ -566,6 +585,7 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
                 if (((PceccCapabilityTlv) tlv).sBit()) {
                     labelStackCapability = true;
                 }
+
                 break;
             case StatefulPceCapabilityTlv.TYPE:
                 statefulPceCapability = true;
@@ -582,7 +602,7 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
             }
         }
         this.capability = new ClientCapability(pceccCapability, statefulPceCapability, pcInstantiationCapability,
-                labelStackCapability, srCapability);
+                labelStackCapability, srCapability, incLblDbVerCapability, deltaLblSyncCapability);
     }
 
     /**

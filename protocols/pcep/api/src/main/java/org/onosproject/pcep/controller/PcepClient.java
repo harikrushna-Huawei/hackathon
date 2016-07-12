@@ -17,6 +17,7 @@ package org.onosproject.pcep.controller;
 
 import java.util.List;
 
+import org.onosproject.net.flow.FlowRule;
 import org.onosproject.pcepio.protocol.PcepFactory;
 import org.onosproject.pcepio.protocol.PcepMessage;
 import org.onosproject.pcepio.protocol.PcepStateReport;
@@ -67,6 +68,20 @@ public interface PcepClient {
      * @return the client pccId in IPAddress format
      */
     PccId getPccId();
+
+    void initSyncLabelMap();
+
+    FlowRule getLabel(int seqNum);
+
+    void setLabel(int seqNum, FlowRule flowRule);
+
+    void resetLabel(int seqNum);
+
+    int getSeqNum();
+
+    void incrSeqNum();
+
+    void resetSyncLabelMap();
 
     /**
      * Checks if the pcc is still connected.

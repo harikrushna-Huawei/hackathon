@@ -41,6 +41,10 @@ public interface PcepClientController {
      */
     PcepClient getClient(PccId pccId);
 
+    long getLabelDbVersion(PccId pccId);
+
+    void incrLabelDbVersion(PccId pccId);
+
     /**
      * Register a listener for meta events that occur to pcep
      * devices.

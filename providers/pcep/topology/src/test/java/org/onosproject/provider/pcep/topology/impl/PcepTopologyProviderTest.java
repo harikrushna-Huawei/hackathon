@@ -292,7 +292,7 @@ public class PcepTopologyProviderTest {
     public void testPcepTopologyProviderTestAddDevice1() {
         PcepClient pc = clientController.getClient(PccId.pccId(IpAddress.valueOf("1.1.1.1")));
         for (PcepNodeListener l : clientController.pcepNodeListener) {
-            pc.setCapability(new ClientCapability(true, true, false, true, true));
+            pc.setCapability(new ClientCapability(true, true, false, true, true, false, false));
             l.addDevicePcepConfig(pc);
 
             DeviceId pccDeviceId = DeviceId.deviceId(String.valueOf(pc.getPccId().ipAddress()));
@@ -314,7 +314,7 @@ public class PcepTopologyProviderTest {
     public void testPcepTopologyProviderTestAddDevice2() {
         PcepClient pc = clientController.getClient(PccId.pccId(IpAddress.valueOf("1.1.1.1")));
         for (PcepNodeListener l : clientController.pcepNodeListener) {
-            pc.setCapability(new ClientCapability(true, true, false, false, true));
+            pc.setCapability(new ClientCapability(true, true, false, false, true, false, false));
             l.addDevicePcepConfig(pc);
 
             DeviceId pccDeviceId = DeviceId.deviceId(String.valueOf(pc.getPccId().ipAddress()));

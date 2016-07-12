@@ -43,7 +43,7 @@ public class PcepLabelDbVerTlv implements PcepValueType {
      */
     protected static final Logger log = LoggerFactory.getLogger(PcepLabelDbVerTlv.class);
 
-    public static final short TYPE = 34;
+    public static final short TYPE = (short) 65292;
     public static final short LENGTH = 8;
     private final long rawValue;
 

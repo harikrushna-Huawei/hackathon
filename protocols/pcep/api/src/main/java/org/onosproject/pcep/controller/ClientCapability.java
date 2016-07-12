@@ -28,6 +28,8 @@ public class ClientCapability {
     private boolean pcInstantiationCapability;
     private boolean labelStackCapability;
     private boolean srCapability;
+    private boolean incLabelDbVersion;
+    private boolean deltaLabelSyncCapability;
 
     /**
      * Creates new instance of client capability.
@@ -39,12 +41,15 @@ public class ClientCapability {
      * @param srCapability represents SR capability
      */
     public ClientCapability(boolean pceccCapability, boolean statefulPceCapability, boolean pcInstantiationCapability,
-            boolean labelStackCapability, boolean srCapability) {
+            boolean labelStackCapability, boolean srCapability, boolean incLabelDbVersion, boolean deltaLabelSyncCapability) {
         this.pceccCapability = pceccCapability;
         this.statefulPceCapability = statefulPceCapability;
         this.pcInstantiationCapability = pcInstantiationCapability;
         this.labelStackCapability = labelStackCapability;
         this.srCapability = srCapability;
+        this.incLabelDbVersion = incLabelDbVersion;
+        this.deltaLabelSyncCapability = deltaLabelSyncCapability;
+
     }
 
     /**
@@ -92,6 +97,24 @@ public class ClientCapability {
         return pcInstantiationCapability;
     }
 
+    /**
+     * Obtains stateful PCE capability.
+     *
+     * @return true if client supports include label db version otherwise false
+     */
+    public boolean labelDbVerCapability() {
+        return incLabelDbVersion;
+    }
+
+    /**
+     * Obtains stateful PCE capability.
+     *
+     * @return true if client supports delta label sync otherwise false
+     */
+    public boolean deltaLabelSyncCapability() {
+        return deltaLabelSyncCapability;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(pceccCapability, statefulPceCapability, pcInstantiationCapability, labelStackCapability,
@@ -109,7 +132,9 @@ public class ClientCapability {
                     && Objects.equals(statefulPceCapability, other.statefulPceCapability)
                     && Objects.equals(pcInstantiationCapability, other.pcInstantiationCapability)
                     && Objects.equals(labelStackCapability, other.labelStackCapability)
-                    && Objects.equals(srCapability, other.srCapability);
+                    && Objects.equals(srCapability, other.srCapability)
+                    && Objects.equals(incLabelDbVersion, other.incLabelDbVersion)
+                    && Objects.equals(deltaLabelSyncCapability, other.deltaLabelSyncCapability);
         }
         return false;
     }
@@ -122,6 +147,8 @@ public class ClientCapability {
                 .add("pcInstantiationCapability", pcInstantiationCapability)
                 .add("labelStackCapability", labelStackCapability)
                 .add("srCapability", srCapability)
+                .add("includeLabelDbVersion", incLabelDbVersion)
+                .add("deltaLabelSyncCapability", deltaLabelSyncCapability)
                 .toString();
     }
 }

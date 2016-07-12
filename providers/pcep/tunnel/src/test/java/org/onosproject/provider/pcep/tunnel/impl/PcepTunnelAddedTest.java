@@ -347,7 +347,7 @@ public class PcepTunnelAddedTest {
 
         deviceService.addDevice(device);
         controller.getClient(PccId.pccId(IpAddress.valueOf("1.1.1.1"))).setCapability(
-                new ClientCapability(true, true, true, true, true));
+                new ClientCapability(true, true, true, true, true, true, true));
         masterShipService.setMaster(true);
         Link link = DefaultLink.builder()
                 .src(new ConnectPoint(device.id(), PortNumber.portNumber(16843009)))
@@ -414,7 +414,7 @@ public class PcepTunnelAddedTest {
         pc.init(pccId, PcepVersion.PCEP_1);
         masterShipService.setMaster(true);
         controller.getClient(pccId).setLspAndDelegationInfo(new LspKey(1, (short) 1), true);
-        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true));
+        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true, true, true));
         controller.getClient(pccId).setLspDbSyncStatus(SYNCED);
 
         // Process update message.
@@ -473,7 +473,7 @@ public class PcepTunnelAddedTest {
 
         PccId pccId = PccId.pccId(IpAddress.valueOf("1.1.1.1"));
         controller.getClient(pccId).setLspDbSyncStatus(SYNCED);
-        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true));
+        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true, true, true));
 
         Link link = DefaultLink.builder()
                 .src(new ConnectPoint(device.id(), PortNumber.portNumber(16843009)))
@@ -543,7 +543,7 @@ public class PcepTunnelAddedTest {
 
         deviceService.addDevice(device);
         controller.getClient(PccId.pccId(IpAddress.valueOf("1.1.1.1"))).setCapability(
-                new ClientCapability(true, true, true, true, true));
+                new ClientCapability(true, true, true, true, true, true, true));
         Link link = DefaultLink.builder()
                 .src(new ConnectPoint(device.id(), PortNumber.portNumber(16843009)))
                 .dst(new ConnectPoint(device.id(), PortNumber.portNumber(84215045)))
@@ -647,7 +647,7 @@ public class PcepTunnelAddedTest {
 
         PccId pccId = PccId.pccId(IpAddress.valueOf("1.1.1.1"));
         controller.getClient(pccId).setLspDbSyncStatus(SYNCED);
-        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true));
+        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true, true, true));
 
         PcepClientAdapter pc = new PcepClientAdapter();
         pc.init(pccId, PcepVersion.PCEP_1);

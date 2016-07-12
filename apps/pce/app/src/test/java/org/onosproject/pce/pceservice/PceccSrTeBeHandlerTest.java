@@ -228,7 +228,7 @@ public class PceccSrTeBeHandlerTest {
         //device 1
         String lsrId1 = "11.1.1.1";
         // Allocate node label for specific device D1deviceId
-        assertThat(srTeHandler.allocateNodeLabel(D1.deviceId(), lsrId1), is(true));
+        assertThat(srTeHandler.allocateNodeLabel(D1.deviceId(), lsrId1, 0), is(true));
         // Retrieve label from store
         LabelResourceId labelId = pceStore.getGlobalNodeLabel(D1.deviceId());
         // Check whether label is generated for this device D1.deviceId()
@@ -237,7 +237,7 @@ public class PceccSrTeBeHandlerTest {
         // device 2
         String lsrId2 = "12.1.1.1";
         // Allocate node label for specific device D2.deviceId()
-        assertThat(srTeHandler.allocateNodeLabel(D2.deviceId(), lsrId2), is(true));
+        assertThat(srTeHandler.allocateNodeLabel(D2.deviceId(), lsrId2, 0), is(true));
         // Retrieve label from store
         labelId = pceStore.getGlobalNodeLabel(D2.deviceId());
         // Check whether label is generated for this device D2.deviceId()
@@ -246,7 +246,7 @@ public class PceccSrTeBeHandlerTest {
         // device 3
         String lsrId3 = "13.1.1.1";
         // Allocate node label for specific device D3.deviceId()
-        assertThat(srTeHandler.allocateNodeLabel(D3.deviceId(), lsrId3), is(true));
+        assertThat(srTeHandler.allocateNodeLabel(D3.deviceId(), lsrId3, 0), is(true));
         // Retrieve label from store
         labelId = pceStore.getGlobalNodeLabel(D3.deviceId());
         // Check whether label is generated for this device D3.deviceId()
@@ -255,7 +255,7 @@ public class PceccSrTeBeHandlerTest {
         // device 4
         String lsrId4 = "14.1.1.1";
         // Allocate node label for specific device D4.deviceId()
-        assertThat(srTeHandler.allocateNodeLabel(D4.deviceId(), lsrId4), is(true));
+        assertThat(srTeHandler.allocateNodeLabel(D4.deviceId(), lsrId4, 0), is(true));
         // Retrieve label from store
         labelId = pceStore.getGlobalNodeLabel(D4.deviceId());
         // Check whether label is generated for this device D4.deviceId()
@@ -264,7 +264,7 @@ public class PceccSrTeBeHandlerTest {
         // device 5
         String lsrId5 = "15.1.1.1";
         // Allocate node label for specific device D5.deviceId()
-        assertThat(srTeHandler.allocateNodeLabel(D5.deviceId(), lsrId5), is(true));
+        assertThat(srTeHandler.allocateNodeLabel(D5.deviceId(), lsrId5, 0), is(true));
         // Retrieve label from store
         labelId = pceStore.getGlobalNodeLabel(D5.deviceId());
         // Check whether label is generated for this device D5.deviceId()
@@ -338,28 +338,28 @@ public class PceccSrTeBeHandlerTest {
     public void testAllocateAdjacencyLabel() {
         // test link1
         // Check whether adjacency label is allocated successfully.
-        assertThat(srTeHandler.allocateAdjacencyLabel(link1), is(true));
+        assertThat(srTeHandler.allocateAdjacencyLabel(link1, 0), is(true));
         // Retrieve from store and check whether adjacency label is generated successfully for this device.
         LabelResourceId labelId = pceStore.getAdjLabel(link1);
         assertThat(labelId, is(notNullValue()));
 
         // test link2
         // Check whether adjacency label is allocated successfully.
-        assertThat(srTeHandler.allocateAdjacencyLabel(link2), is(true));
+        assertThat(srTeHandler.allocateAdjacencyLabel(link2, 0), is(true));
         // Retrieve from store and check whether adjacency label is generated successfully for this device.
         labelId = pceStore.getAdjLabel(link2);
         assertThat(labelId, is(notNullValue()));
 
         // test link3
         // Check whether adjacency label is allocated successfully.
-        assertThat(srTeHandler.allocateAdjacencyLabel(link3), is(true));
+        assertThat(srTeHandler.allocateAdjacencyLabel(link3, 0), is(true));
         // Retrieve from store and check whether adjacency label is generated successfully for this device.
         labelId = pceStore.getAdjLabel(link3);
         assertThat(labelId, is(notNullValue()));
 
         // test link4
         // Check whether adjacency label is allocated successfully.
-        assertThat(srTeHandler.allocateAdjacencyLabel(link4), is(true));
+        assertThat(srTeHandler.allocateAdjacencyLabel(link4, 0), is(true));
         // Retrieve from store and check whether adjacency label is generated successfully for this device.
         labelId = pceStore.getAdjLabel(link4);
         assertThat(labelId, is(notNullValue()));
@@ -372,7 +372,7 @@ public class PceccSrTeBeHandlerTest {
     public void testReleaseAdjacencyLabel() {
         // Test link1
         // Check whether adjacency label is released successfully.
-        assertThat(srTeHandler.allocateAdjacencyLabel(link1), is(true));
+        assertThat(srTeHandler.allocateAdjacencyLabel(link1, 0), is(true));
         assertThat(srTeHandler.releaseAdjacencyLabel(link1), is(true));
         // Retrieve from store and check whether adjacency label is removed successfully for this device.
         LabelResourceId labelId = pceStore.getAdjLabel(link1);
@@ -380,7 +380,7 @@ public class PceccSrTeBeHandlerTest {
 
         // Test link2
         // Check whether adjacency label is released successfully.
-        assertThat(srTeHandler.allocateAdjacencyLabel(link2), is(true));
+        assertThat(srTeHandler.allocateAdjacencyLabel(link2, 0), is(true));
         assertThat(srTeHandler.releaseAdjacencyLabel(link2), is(true));
         // Retrieve from store and check whether adjacency label is removed successfully for this device.
         labelId = pceStore.getAdjLabel(link2);

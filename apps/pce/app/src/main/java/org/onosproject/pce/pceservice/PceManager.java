@@ -878,7 +878,7 @@ public class PceManager implements PceService {
      *
      * @param specificDevice device to which node label needs to be allocated
      */
-    public void allocateNodeLabel(Device specificDevice) {
+    public void allocateNodeLabel(Device specificDevice, int seqNum) {
         checkNotNull(specificDevice, DEVICE_NULL);
 
         DeviceId deviceId = specificDevice.id();
@@ -906,7 +906,7 @@ public class PceManager implements PceService {
 
         // Check whether device has SR-TE Capability
         if (cfg.labelStackCap()) {
-            srTeHandler.allocateNodeLabel(deviceId, lsrId);
+            srTeHandler.allocateNodeLabel(deviceId, lsrId, seqNum);
         }
     }
 
@@ -953,7 +953,7 @@ public class PceManager implements PceService {
      *
      * @param link link
      */
-    public void allocateAdjacencyLabel(Link link) {
+    public void allocateAdjacencyLabel(Link link, int seqNum) {
         checkNotNull(link, LINK_NULL);
 
         Device specificDevice = deviceService.getDevice(link.src().deviceId());
@@ -985,7 +985,7 @@ public class PceManager implements PceService {
 
         // Check whether device has SR-TE Capability
         if (cfg.labelStackCap()) {
-            srTeHandler.allocateAdjacencyLabel(link);
+            srTeHandler.allocateAdjacencyLabel(link, seqNum);
         }
 
         return;
@@ -1095,7 +1095,7 @@ public class PceManager implements PceService {
             case LINK_ADDED:
                 // Allocate adjacency label
                 if (mastershipService.getLocalRole(link.src().deviceId()) == MastershipRole.MASTER) {
-                    allocateAdjacencyLabel(link);
+                    allocateAdjacencyLabel(link, 0);
                 }
                 break;
 
@@ -1235,13 +1235,13 @@ public class PceManager implements PceService {
                 if (cfg.labelStackCap()) {
                     if (mastershipService.getLocalRole(deviceId) == MastershipRole.MASTER) {
                         // Allocate node-label
-                        srTeHandler.allocateNodeLabel(deviceId, lsrId);
+                        srTeHandler.allocateNodeLabel(deviceId, lsrId, 0);
 
                         // Allocate adjacency label to links which are
                         // originated from this specific device id
                         Set<Link> links = linkService.getDeviceEgressLinks(deviceId);
                         for (Link link : links) {
-                            if (!srTeHandler.allocateAdjacencyLabel(link)) {
+                            if (!srTeHandler.allocateAdjacencyLabel(link, 0)) {
                                 return;
                             }
                         }
@@ -1256,6 +1256,7 @@ public class PceManager implements PceService {
 
     private boolean syncLabelDb(DeviceId deviceId) {
         checkNotNull(deviceId);
+        int seqNum = 1;
 
         DeviceId actualDevcieId = pceStore.getLsrIdDevice(deviceId.toString());
         if (actualDevcieId == null) {
@@ -1294,7 +1295,9 @@ public class PceManager implements PceService {
                 srTeHandler.advertiseNodeLabelRule(actualDevcieId,
                                                    entry.getValue(),
                                                    IpPrefix.valueOf(IpAddress.valueOf(srcLsrId), PREFIX_LENGTH),
-                                                   Objective.Operation.ADD, false);
+                                                   Objective.Operation.ADD, false, seqNum);
+                seqNum++;
+                //log.info("bos: false, send Node label:" + entry.getValue() + " seqnum: " + seqNum);
             }
 
             Map<Link, LabelResourceId> adjLabelMap = pceStore.getAdjLabels();
@@ -1304,7 +1307,9 @@ public class PceManager implements PceService {
                                                     entry.getValue(),
                                                     entry.getKey().src().port(),
                                                     entry.getKey().dst().port(),
-                                                    Objective.Operation.ADD);
+                                                    Objective.Operation.ADD, seqNum);
+                    seqNum++;
+                    //log.info("send adj label:" + entry.getValue() + " seqnum: " + seqNum);
                 }
             }
         }
@@ -1312,19 +1317,22 @@ public class PceManager implements PceService {
         srTeHandler.advertiseNodeLabelRule(actualDevcieId,
                                            LabelResourceId.labelResourceId(0),
                                            IpPrefix.valueOf(END_OF_SYNC_IP_PREFIX),
-                                           Objective.Operation.ADD, true);
+                                           Objective.Operation.ADD, true, seqNum);
+        seqNum++;
 
         log.debug("End of label DB sync for device {}", actualDevcieId);
 
         if (mastershipService.getLocalRole(specificDevice.id()) == MastershipRole.MASTER) {
             // Allocate node-label to this specific device.
-            allocateNodeLabel(specificDevice);
+            allocateNodeLabel(specificDevice, seqNum);
+            seqNum++;
 
             // Allocate adjacency label
             Set<Link> links = linkService.getDeviceEgressLinks(specificDevice.id());
             if (links != null) {
                 for (Link link : links) {
-                    allocateAdjacencyLabel(link);
+                    allocateAdjacencyLabel(link, seqNum);
+                    seqNum++;
                 }
             }
         }

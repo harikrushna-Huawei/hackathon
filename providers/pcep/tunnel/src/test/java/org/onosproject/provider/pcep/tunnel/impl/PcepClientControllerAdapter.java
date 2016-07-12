@@ -31,6 +31,7 @@ import org.onosproject.pcep.controller.PcepClientListener;
 import org.onosproject.pcep.controller.PcepEventListener;
 import org.onosproject.pcep.controller.PcepNodeListener;
 import org.onosproject.pcep.controller.PcepPacketListener;
+import org.onosproject.pcep.controller.PcepSyncStatus;
 import org.onosproject.pcep.controller.driver.PcepAgent;
 import org.onosproject.pcepio.protocol.PcepError;
 import org.onosproject.pcepio.protocol.PcepErrorInfo;
@@ -83,6 +84,16 @@ public class PcepClientControllerAdapter implements PcepClientController {
         pc.init(PccId.pccId(pccId.ipAddress()), PcepVersion.PCEP_1);
         connectedClients.put(pccId, pc);
         return pc;
+    }
+
+    @Override
+    public long getLabelDbVersion(PccId pccId) {
+        return 0;
+    }
+
+    @Override
+    public void incrLabelDbVersion(PccId pccId) {
+
     }
 
     @Override

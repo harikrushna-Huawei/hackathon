@@ -172,7 +172,7 @@ public final class PceccSrTeBeHandler {
      * @param specificLsrId lsrid of specific device
      * @return success or failure
      */
-    public boolean allocateNodeLabel(DeviceId specificDeviceId, String specificLsrId) {
+    public boolean allocateNodeLabel(DeviceId specificDeviceId, String specificLsrId, int seqNum) {
         long applyNum = 1; // For each node only one node label
         LabelResourceId specificLabelId = null;
 
@@ -210,7 +210,7 @@ public final class PceccSrTeBeHandler {
         // Push its label information into specificDeviceId
         advertiseNodeLabelRule(specificDeviceId, specificLabelId,
                                IpPrefix.valueOf(IpAddress.valueOf(specificLsrId), PREFIX_LENGTH),
-                               Objective.Operation.ADD, false);
+                               Objective.Operation.ADD, false, seqNum);
 
         // Configure (node-label, lsr-id) mapping of each devices into specific device and vice versa.
         for (Map.Entry<DeviceId, LabelResourceId> element : pceStore.getGlobalNodeLabels().entrySet()) {
@@ -230,11 +230,11 @@ public final class PceccSrTeBeHandler {
             if (!otherDevId.equals(specificDeviceId)) {
                 advertiseNodeLabelRule(otherDevId, specificLabelId,
                                        IpPrefix.valueOf(IpAddress.valueOf(specificLsrId), PREFIX_LENGTH),
-                                       Objective.Operation.ADD, false);
+                                       Objective.Operation.ADD, false, 0);
 
                 advertiseNodeLabelRule(specificDeviceId, otherLabelId,
                                        IpPrefix.valueOf(IpAddress.valueOf(otherLsrId), PREFIX_LENGTH),
-                                       Objective.Operation.ADD, false);
+                                       Objective.Operation.ADD, false, 0);
             }
         }
 
@@ -273,7 +273,7 @@ public final class PceccSrTeBeHandler {
             if (!specificDeviceId.equals(otherDevId)) {
                 advertiseNodeLabelRule(otherDevId, labelId,
                                        IpPrefix.valueOf(IpAddress.valueOf(specificLsrId), PREFIX_LENGTH),
-                                       Objective.Operation.REMOVE, false);
+                                       Objective.Operation.REMOVE, false, 0);
             }
         }
 
@@ -300,7 +300,7 @@ public final class PceccSrTeBeHandler {
      * @param link between devices
      * @return success or failure
      */
-    public boolean allocateAdjacencyLabel(Link link) {
+    public boolean allocateAdjacencyLabel(Link link, int seqNum) {
         long applyNum = 1; // Single label to each link.
         DeviceId srcDeviceId = link.src().deviceId();
         Collection<LabelResource> labelList;
@@ -335,7 +335,7 @@ public final class PceccSrTeBeHandler {
         log.debug("Allocated adjacency label {} to a link {}.", labelId.toString(), link.toString());
 
         // Push adjacency label to device
-        installAdjLabelRule(srcDeviceId, labelId, link.src().port(), link.dst().port(), Objective.Operation.ADD);
+        installAdjLabelRule(srcDeviceId, labelId, link.src().port(), link.dst().port(), Objective.Operation.ADD, seqNum);
 
         // Save in store
         pceStore.addAdjLabel(link, labelId);
@@ -365,7 +365,7 @@ public final class PceccSrTeBeHandler {
         DeviceId srcDeviceId = link.src().deviceId();
 
         // Release adjacency label from device
-        installAdjLabelRule(srcDeviceId, labelId, link.src().port(), link.dst().port(), Objective.Operation.REMOVE);
+        installAdjLabelRule(srcDeviceId, labelId, link.src().port(), link.dst().port(), Objective.Operation.REMOVE, 0);
 
         // Release link label from label manager
         Multimap<DeviceId, LabelResource> release = ArrayListMultimap.create();
@@ -467,7 +467,7 @@ public final class PceccSrTeBeHandler {
      * @param bBos is this the end of sync push
      */
     public void advertiseNodeLabelRule(DeviceId deviceId, LabelResourceId labelId, IpPrefix ipPrefix,
-                                       Objective.Operation type, boolean bBos) {
+                                       Objective.Operation type, boolean bBos, int seqNum) {
         checkNotNull(flowObjectiveService);
         checkNotNull(appId);
         TrafficSelector.Builder selectorBuilder = DefaultTrafficSelector.builder();
@@ -477,6 +477,10 @@ public final class PceccSrTeBeHandler {
 
         if (bBos) {
             selectorBuilder.matchMplsBos(bBos);
+        }
+
+        if (seqNum != 0) {
+            selectorBuilder.matchArpOp(seqNum);
         }
 
         TrafficTreatment treatment = DefaultTrafficTreatment.builder().build();
@@ -490,6 +494,8 @@ public final class PceccSrTeBeHandler {
         } else {
             flowObjectiveService.forward(deviceId, forwardingObjective.remove());
         }
+
+        //log.info("to flow service: sending node label: " + labelId + " Bos: " + bBos + " seqnum: " + seqNum);
     }
 
     /**
@@ -502,7 +508,7 @@ public final class PceccSrTeBeHandler {
      * @param type type of operation
      */
     public void installAdjLabelRule(DeviceId deviceId, LabelResourceId labelId, PortNumber srcPortNum,
-                                    PortNumber dstPortNum, Objective.Operation type) {
+                                    PortNumber dstPortNum, Objective.Operation type, int seqNum) {
         checkNotNull(flowObjectiveService);
         checkNotNull(appId);
         TrafficSelector.Builder selectorBuilder = DefaultTrafficSelector.builder();
@@ -510,6 +516,10 @@ public final class PceccSrTeBeHandler {
         selectorBuilder.matchMplsLabel(MplsLabel.mplsLabel(labelId.id().intValue()));
         selectorBuilder.matchIPSrc(IpPrefix.valueOf((int) srcPortNum.toLong(), 32));
         selectorBuilder.matchIPDst(IpPrefix.valueOf((int) dstPortNum.toLong(), 32));
+
+        if (seqNum != 0) {
+            selectorBuilder.matchArpOp(seqNum);
+        }
 
         TrafficTreatment treatment = DefaultTrafficTreatment.builder().build();
 
@@ -522,5 +532,7 @@ public final class PceccSrTeBeHandler {
         } else {
             flowObjectiveService.forward(deviceId, forwardingObjective.remove());
         }
+
+        //log.info("to flow service: sending adj label: " + labelId + " seqnum: " + seqNum);
     }
 }

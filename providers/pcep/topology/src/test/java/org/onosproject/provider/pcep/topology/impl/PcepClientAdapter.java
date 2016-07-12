@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.jboss.netty.channel.Channel;
+import org.onosproject.net.flow.FlowRule;
 import org.onosproject.pcep.controller.ClientCapability;
 import org.onosproject.pcep.controller.PccId;
 import org.onosproject.pcep.controller.LspKey;
@@ -94,7 +95,44 @@ public class PcepClientAdapter implements PcepClient {
     @Override
     public final PccId getPccId() {
         return this.pccId;
-    };
+    }
+
+    @Override
+    public void initSyncLabelMap() {
+
+    }
+
+    @Override
+    public FlowRule getLabel(int seqNum) {
+        return null;
+    }
+
+    @Override
+    public void setLabel(int seqNum, FlowRule flowRule) {
+
+    }
+
+    @Override
+    public void resetLabel(int seqNum) {
+
+    }
+
+    @Override
+    public int getSeqNum() {
+        return 0;
+    }
+
+    @Override
+    public void incrSeqNum() {
+
+    }
+
+    @Override
+    public void resetSyncLabelMap() {
+
+    }
+
+    ;
 
     @Override
     public final String getStringId() {

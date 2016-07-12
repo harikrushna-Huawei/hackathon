@@ -108,6 +108,7 @@ import org.onosproject.net.flow.FlowRuleProviderRegistry;
 import org.onosproject.net.flow.FlowRuleProviderService;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.FlowEntry.FlowEntryState;
+import org.onosproject.net.flow.criteria.ArpOpCriterion;
 import org.onosproject.net.flow.criteria.Criterion;
 import org.onosproject.net.flow.criteria.ExtensionCriterion;
 import org.onosproject.net.flow.criteria.ExtensionSelector;
@@ -124,6 +125,8 @@ import org.onosproject.net.resource.ResourceService;
 import org.onosproject.pcep.controller.PccId;
 import org.onosproject.pcep.controller.PcepClient;
 import org.onosproject.pcep.controller.PcepClientController;
+import org.onosproject.pcep.controller.PcepSyncStatus;
+import org.onosproject.pcep.controller.impl.PcepLabelDbVersionMap;
 import org.onosproject.pcepio.exceptions.PcepParseException;
 import org.onosproject.pcepio.protocol.PcepEroObject;
 import org.onosproject.pcepio.protocol.PcepFecObjectIPv4;
@@ -139,6 +142,7 @@ import org.onosproject.pcepio.protocol.PcepUpdateRequest;
 import org.onosproject.pcepio.types.IPv4SubObject;
 import org.onosproject.pcepio.types.NexthopIPv4addressTlv;
 import org.onosproject.pcepio.types.PathSetupTypeTlv;
+import org.onosproject.pcepio.types.PcepLabelDbVerTlv;
 import org.onosproject.pcepio.types.PcepLabelDownload;
 import org.onosproject.pcepio.types.PcepLabelMap;
 import org.onosproject.pcepio.types.PcepValueType;
@@ -238,7 +242,48 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
         }
     }
 
-    private void processRule(FlowRule flowRule, PcepFlowType type) {
+    synchronized private void processRule(FlowRule flowRule, PcepFlowType type) {
+        int seqNum = 0;
+
+        TrafficSelector selector = flowRule.selector();
+        for (Criterion c : selector.criteria()) {
+            switch (c.type()) {
+                case ARP_OP:
+                    ArpOpCriterion op = (ArpOpCriterion) c;
+                    seqNum = op.arpOp();
+                    //log.info("Received Seq Num : " + seqNum);
+                    break;
+                default:
+                    break;
+            }
+
+            if (seqNum != 0) {
+                break;
+            }
+        }
+
+        if (seqNum != 0)  {
+            PcepClient pc = getPcepClient(flowRule.deviceId());
+
+            pc.setLabel(seqNum, flowRule);
+
+            int activeSeqNum = pc.getSeqNum();
+            while (pc.getLabel(activeSeqNum) != null) {
+                //log.info("Processing sequence Number: " + activeSeqNum);
+                innerProcessRule(pc.getLabel(activeSeqNum), PcepFlowType.ADD);
+                pc.resetLabel(activeSeqNum);
+
+                pc.incrSeqNum();
+                activeSeqNum = pc.getSeqNum();
+                //log.info("Current seq num: " + activeSeqNum);
+            }
+        }
+        else {
+            innerProcessRule(flowRule, type);
+        }
+    }
+
+    private void innerProcessRule(FlowRule flowRule, PcepFlowType type) {
         MplsLabel mplsLabel = null;
         IpPrefix ip4PrefixSrc = null;
         IpPrefix ip4PrefixDst = null;
@@ -253,6 +298,7 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
             case MPLS_LABEL:
                 MplsCriterion lc = (MplsCriterion) c;
                 mplsLabel = lc.label();
+                //log.info("sending Mpls Label : " + mplsLabel);
                 break;
             case IPV4_SRC:
                 IPCriterion ipCriterion = (IPCriterion) c;
@@ -287,6 +333,26 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
         LabelResourceId label = LabelResourceId.labelResourceId(mplsLabel.toInt());
 
         try {
+
+            PcepClient pc = getPcepClient(flowRule.deviceId());
+            if (pc != null) {
+                if ((pc.labelDbSyncStatus() == PcepSyncStatus.SYNCED)
+                        || ((pcepController.getLabelDbVersion(pc.getPccId()) == 0)
+                        && (label.labelId() != 0))) {
+                    pcepController.incrLabelDbVersion(pc.getPccId());
+                }
+            } else {
+                // increment label db version if pcep session not exist, but dbversion map exist
+                Device device = deviceService.getDevice(flowRule.deviceId());
+                String lsrId = device.annotations().value(LSRID);
+                PccId pccId = PccId.pccId(IpAddress.valueOf(lsrId));
+
+                if ((pcepController.getLabelDbVersion(pccId) != 0)
+                        && (label.labelId() != 0)) {
+                    pcepController.incrLabelDbVersion(pccId);
+                }
+            }
+
             if (tunnelId != null) {
                 pushLocalLabels(flowRule.deviceId(), label, port, tunnelId, bottomOfStack, labelType, type);
                 return;
@@ -353,9 +419,14 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
 
         PcepSrpObject srpObj = getSrpObject(pc, type, bSFlag);
 
+        LinkedList<PcepValueType> optionalTlv = new LinkedList<>();
+        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
+        optionalTlv.add(dbVerTlv);
+
         //Global NODE-SID as label object
         PcepLabelObject labelObject = pc.factory().buildLabelObject()
                                       .setLabel((int) labelId.labelId())
+                                      .setOptionalTlv(optionalTlv)
                                       .build();
 
         PcepLabelMap labelMap = new PcepLabelMap();
@@ -370,7 +441,7 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
         PcepLabelUpdateMsg labelMsg = pc.factory().buildPcepLabelUpdateMsg()
                                       .setPcLabelUpdateList(labelUpdateList)
                                       .build();
-
+        //log.info("FlowProvider node sending label: " + labelId + " synch flag: " + bSFlag);
         pc.sendMessage(labelMsg);
 
         if (isBos) {
@@ -433,9 +504,14 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
 
         PcepSrpObject srpObj = getSrpObject(pc, type, bSFlag);
 
+        LinkedList<PcepValueType> optionalTlv = new LinkedList<>();
+        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
+        optionalTlv.add(dbVerTlv);
+
         //Adjacency label object
         PcepLabelObject labelObject = pc.factory().buildLabelObject()
                                       .setLabel((int) labelId.labelId())
+                                      .setOptionalTlv(optionalTlv)
                                       .build();
 
         PcepLabelMap labelMap = new PcepLabelMap();
@@ -450,7 +526,7 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
         PcepLabelUpdateMsg labelMsg = pc.factory().buildPcepLabelUpdateMsg()
                                       .setPcLabelUpdateList(labelUpdateList)
                                       .build();
-
+        //log.info("FlowProvider sending adj label: " + labelId + " synch flag: " + bSFlag);
         pc.sendMessage(labelMsg);
     }
 
@@ -483,6 +559,9 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
         portNo = ((portNo & IDENTIFIER_SET) == IDENTIFIER_SET) ? portNo & SET : portNo;
 
         optionalTlv.add(NexthopIPv4addressTlv.of((int) portNo));
+
+        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
+        optionalTlv.add(dbVerTlv);
 
         Tunnel tunnel = tunnelService.queryTunnel(tunnelId);
 

@@ -134,7 +134,7 @@ public class PcepReleaseTunnelProviderTest {
 
         tunnelProvider.pcepTunnelApiMapper.handleCreateTunnelRequestQueue(1, pcepTunnelData);
         controller.getClient(PccId.pccId(IpAddress.valueOf(0xB6024E20))).setCapability(
-                new ClientCapability(true, true, true, true, true));
+                new ClientCapability(true, true, true, true, true, true, true));
 
         tunnelProvider.releaseTunnel(tunnel);
         assertThat(tunnelProvider.pcepTunnelApiMapper, not(nullValue()));
@@ -190,7 +190,7 @@ public class PcepReleaseTunnelProviderTest {
 
         tunnelProvider.pcepTunnelApiMapper.handleCreateTunnelRequestQueue(1, pcepTunnelData);
         controller.getClient(PccId.pccId(IpAddress.valueOf(0xB6024E22))).setCapability(
-                new ClientCapability(true, false, false, true, true));
+                new ClientCapability(true, false, false, true, true, true, true));
 
         tunnelProvider.releaseTunnel(tunnel);
         assertThat(tunnelProvider.pcepTunnelApiMapper.checkFromTunnelRequestQueue(1), is(false));
@@ -246,7 +246,7 @@ public class PcepReleaseTunnelProviderTest {
 
         tunnelProvider.pcepTunnelApiMapper.handleCreateTunnelRequestQueue(1, pcepTunnelData);
         controller.getClient(PccId.pccId(IpAddress.valueOf(0xB6024E20))).setCapability(
-                new ClientCapability(true, true, true, true, true));
+                new ClientCapability(true, true, true, true, true, true, true));
 
         tunnelProvider.releaseTunnel(tunnel);
         assertThat(tunnelProvider.pcepTunnelApiMapper, not(nullValue()));
@@ -302,7 +302,7 @@ public class PcepReleaseTunnelProviderTest {
 
         tunnelProvider.pcepTunnelApiMapper.handleCreateTunnelRequestQueue(1, pcepTunnelData);
         controller.getClient(PccId.pccId(IpAddress.valueOf(0xB6024E20))).setCapability(
-                new ClientCapability(true, true, true, true, true));
+                new ClientCapability(true, true, true, true, true, true, true));
 
         tunnelProvider.releaseTunnel(tunnel);
         assertThat(tunnelProvider.pcepTunnelApiMapper, not(nullValue()));

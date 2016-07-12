@@ -27,6 +27,7 @@ import java.util.concurrent.RejectedExecutionException;
 
 import org.jboss.netty.channel.Channel;
 import org.onlab.packet.IpAddress;
+import org.onosproject.net.flow.FlowRule;
 import org.onosproject.pcep.controller.ClientCapability;
 import org.onosproject.pcep.controller.LspKey;
 import org.onosproject.pcep.controller.PccId;
@@ -39,6 +40,7 @@ import org.onosproject.pcepio.protocol.PcepFactories;
 import org.onosproject.pcepio.protocol.PcepFactory;
 import org.onosproject.pcepio.protocol.PcepMessage;
 import org.onosproject.pcepio.protocol.PcepStateReport;
+import org.onosproject.pcepio.protocol.PcepType;
 import org.onosproject.pcepio.protocol.PcepVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +77,9 @@ public class PcepClientImpl implements PcepClientDriver {
     private Map<LspKey, Boolean> lspDelegationInfo = new HashMap<>();
     private Map<PccId, List<PcepStateReport>> syncRptCache = new HashMap<>();
 
+    private Map<Integer, FlowRule> syncLabelMap;
+    private int seqNum;
+
     @Override
     public void init(PccId pccId, PcepVersion pcepVersion, PcepPacketStats pktStats) {
         this.pccId = pccId;
@@ -103,6 +108,15 @@ public class PcepClientImpl implements PcepClientDriver {
         try {
             channel.write(Collections.singletonList(m));
             this.pktStats.addOutPacket();
+
+            if (m.getType() == PcepType.LABEL_UPDATE) {
+                if ((labelDbSyncStatus() == PcepSyncStatus.SYNCED)) {
+                    //log.info("sending label update msg after synch");
+                } else {
+                    //log.info("sending label update msg in synch");
+                }
+            }
+
         } catch (RejectedExecutionException e) {
             log.warn(e.getMessage());
             if (!e.getMessage().contains(SHUTDOWN_MSG)) {
@@ -160,6 +174,52 @@ public class PcepClientImpl implements PcepClientDriver {
     }
 
     @Override
+    public void initSyncLabelMap() {
+        if ((syncLabelMap != null) && (!syncLabelMap.isEmpty())) {
+            resetSyncLabelMap();
+        }
+
+        syncLabelMap = new HashMap<>();
+        seqNum = 1;
+
+        //log.info("init sync label map for Pcc:" + this.pccId.ipAddress());
+    }
+
+    @Override
+    public FlowRule getLabel(int seqNum) {
+        return syncLabelMap.get(seqNum);
+    }
+
+    @Override
+    public void setLabel(int seqNum, FlowRule flowRule) {
+        //log.info("set sync label map for Pcc:" + this.pccId.ipAddress() + " seq num:" + seqNum);
+        syncLabelMap.put(seqNum, flowRule);
+    }
+
+    @Override
+    public void resetLabel(int seqNum) {
+        //log.info("reset sync label map for Pcc:" + this.pccId.ipAddress() + " seq num:" + seqNum);
+        syncLabelMap.remove(seqNum);
+    }
+
+    @Override
+    public int getSeqNum() {
+        return seqNum;
+    }
+
+    @Override
+    public void incrSeqNum() {
+        seqNum += 1;
+        //log.info("incr seq num for Pcc:" + this.pccId.ipAddress() + " seq num:" + seqNum);
+    }
+
+    @Override
+    public void resetSyncLabelMap() {
+        syncLabelMap.clear();
+        seqNum = 0;
+    }
+
+    @Override
     public final String getStringId() {
         return this.pccId.toString();
     }
@@ -200,7 +260,7 @@ public class PcepClientImpl implements PcepClientDriver {
 
         PcepSyncStatus syncOldStatus = labelDbSyncStatus();
         this.labelDbSyncStatus = syncStatus;
-        log.debug("Label DB sync status set from {} to {}", syncOldStatus, syncStatus);
+        log.info("Label DB sync status set from {} to {}", syncOldStatus, syncStatus);
         if ((syncOldStatus == PcepSyncStatus.IN_SYNC) && (syncStatus == PcepSyncStatus.SYNCED)) {
             // Perform end of LSP DB sync actions.
             this.agent.analyzeSyncMsgList(pccId);

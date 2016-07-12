@@ -58,12 +58,18 @@ import org.onosproject.pcepio.protocol.PcepErrorInfo;
 import org.onosproject.pcepio.protocol.PcepErrorMsg;
 import org.onosproject.pcepio.protocol.PcepErrorObject;
 import org.onosproject.pcepio.protocol.PcepFactory;
+import org.onosproject.pcepio.protocol.PcepFecObjectIPv4;
 import org.onosproject.pcepio.protocol.PcepInitiateMsg;
+import org.onosproject.pcepio.protocol.PcepLabelObject;
+import org.onosproject.pcepio.protocol.PcepLabelUpdate;
+import org.onosproject.pcepio.protocol.PcepLabelUpdateMsg;
 import org.onosproject.pcepio.protocol.PcepLspObject;
 import org.onosproject.pcepio.protocol.PcepMessage;
 import org.onosproject.pcepio.protocol.PcepReportMsg;
 import org.onosproject.pcepio.protocol.PcepSrpObject;
 import org.onosproject.pcepio.protocol.PcepStateReport;
+import org.onosproject.pcepio.protocol.PcepType;
+import org.onosproject.pcepio.types.PcepLabelMap;
 import org.onosproject.pcepio.types.PcepValueType;
 import org.onosproject.pcepio.types.StatefulIPv4LspIdentifiersTlv;
 import org.onosproject.pcepio.types.SymbolicPathNameTlv;
@@ -79,7 +85,7 @@ import static org.onosproject.pcep.controller.PcepLspSyncAction.SEND_UPDATE;
 import static org.onosproject.pcep.controller.PcepLspSyncAction.UNSTABLE;
 import static org.onosproject.pcepio.types.PcepErrorDetailInfo.ERROR_TYPE_19;
 import static org.onosproject.pcepio.types.PcepErrorDetailInfo.ERROR_VALUE_5;
-
+import static org.onosproject.pcep.controller.PcepSyncStatus.SYNCED;
 /**
  * Implementation of PCEP client controller.
  */
@@ -138,6 +144,18 @@ public class PcepClientControllerImpl implements PcepClientController {
     @Override
     public PcepClient getClient(PccId pccId) {
         return connectedClients.get(pccId);
+    }
+
+    @Override
+    public long getLabelDbVersion(PccId pccId) {
+        return PcepLabelDbVersionMap.getDbVersion(pccId.ipAddress());
+    }
+
+    @Override
+    public void incrLabelDbVersion(PccId pccId) {
+        PcepLabelDbVersionMap.incrDbVersion(pccId.ipAddress());
+        log.info("incrementing label db version: " + PcepLabelDbVersionMap.getDbVersion(pccId.ipAddress())
+                         + " for Pcc:" + pccId.ipAddress().toString());
     }
 
     @Override
@@ -254,20 +272,16 @@ public class PcepClientControllerImpl implements PcepClientController {
                         if (pc.lspDbSyncStatus() == PcepSyncStatus.IN_SYNC
                                 || pc.lspDbSyncStatus() == PcepSyncStatus.NOT_SYNCED) {
                             // Set end of LSPDB sync.
-                            log.debug("LSP DB sync completed for PCC {}", pc.getPccId().id().toString());
+                            log.info("LSP DB sync completed for PCC {}", pc.getPccId().id().toString());
                             pc.setLspDbSyncStatus(PcepSyncStatus.SYNCED);
 
-                            // Call packet provider to initiate label DB sync (only if PCECC capable).
-                            if (pc.capability().pceccCapability()) {
-                                log.debug("Trigger label DB sync for PCC {}", pc.getPccId().id().toString());
-                                pc.setLabelDbSyncStatus(IN_SYNC);
-                                for (PcepPacketListener l : pcepPacketListener) {
-                                    l.sendPacketIn(pccId);
-                                }
-                            } else {
-                                // If label db sync is not to be done, handle end of LSPDB sync actions.
-                                agent.analyzeSyncMsgList(pccId);
+                            // Init label db version for this PCC
+                            if (PcepLabelDbVersionMap.getDbVersion(pc.getPccId().id()) == 0) {
+                                PcepLabelDbVersionMap.initDbVersion(pc.getPccId().id());
+                                log.info(" Init label db version for Pcc:"+ pc.getPccId().ipAddress().toString());
                             }
+
+ 
                             continue;
                         }
                     }
@@ -300,8 +314,99 @@ public class PcepClientControllerImpl implements PcepClientController {
         }
     }
 
+    public void handleLabelDbSyncEnd(PcepClient pc) {
+
+        // Call packet provider to initiate label DB sync (only if PCECC capable).
+        if (pc.capability().pceccCapability()) {
+            pc.setLabelDbSyncStatus(IN_SYNC);
+
+            // trigger label db sync if db version mismatch or labeldb version is zero
+            if ((PcepLabelDbVersionMap.getDbVersion(pc.getPccId().id()) == 0)
+                || (PcepLabelDbVersionMap.getRcvDbVersion(pc.getPccId().id())
+                    != PcepLabelDbVersionMap.getDbVersion(pc.getPccId().id()))) {
+
+                log.info("Trigger label DB sync for PCC {}", pc.getPccId().id().toString());
+
+                pc.initSyncLabelMap();
+
+                for (PcepPacketListener l : pcepPacketListener) {
+                    l.sendPacketIn(pc.getPccId());
+                }
+            } else {
+                log.info("Avoided label DB sync for PCC {}", pc.getPccId().id().toString());
+
+                // send sync end
+                sendLabelDbSyncEnd(pc);
+            }
+
+            PcepLabelDbVersionMap.resetRcvDbVersion(pc.getPccId().id());
+            log.info("Resetting recv label DB version for PCC {}", pc.getPccId().id().toString());
+
+        } else {
+            // If label db sync is not to be done, handle end of LSPDB sync actions.
+            agent.analyzeSyncMsgList(pc.getPccId());
+        }
+    }
+
+    public void sendLabelDbSyncEnd(PcepClient pc) {
+        LinkedList<PcepLabelUpdate> labelUpdateList = new LinkedList<>();
+
+        PcepFecObjectIPv4 fecObject = null;
+        try {
+            fecObject = pc.factory().buildFecObjectIpv4()
+                    .setNodeID(0)
+                    .build();
+        } catch (PcepParseException e) {
+            e.printStackTrace();
+        }
+
+        PcepSrpObject srpObj = null;
+        try {
+            srpObj = pc.factory().buildSrpObject()
+                                 .setRFlag(false)
+                                 .setSFlag(false)
+                                 .setSrpID(SrpIdGenerators.create())
+                                 .build();
+        } catch (PcepParseException e) {
+            e.printStackTrace();
+        }
+
+        //Global NODE-SID as label object
+        PcepLabelObject labelObject = null;
+        try {
+            labelObject = pc.factory().buildLabelObject()
+                            .setLabel(0)
+                            .build();
+        } catch (PcepParseException e) {
+            e.printStackTrace();
+        }
+
+        PcepLabelMap labelMap = new PcepLabelMap();
+        labelMap.setFecObject(fecObject);
+        labelMap.setLabelObject(labelObject);
+        labelMap.setSrpObject(srpObj);
+
+        try {
+            labelUpdateList.add(pc.factory().buildPcepLabelUpdateObject()
+                                .setLabelMap(labelMap)
+                                .build());
+        } catch (PcepParseException e) {
+            e.printStackTrace();
+        }
+
+        PcepLabelUpdateMsg labelMsg = pc.factory().buildPcepLabelUpdateMsg()
+                .setPcLabelUpdateList(labelUpdateList)
+                .build();
+
+        pc.sendMessage(labelMsg);
+
+        pc.setLabelDbSyncStatus(SYNCED);
+        log.info("sending label db sync end for Pcc: " + pc.getPccId().ipAddress().toString());
+    }
+
     @Override
     public void closeConnectedClients() {
+        PcepFlushTimerMap.cleanUp();
         PcepClient pc;
         for (PccId id : connectedClients.keySet()) {
             pc = getClient(id);
@@ -359,6 +464,11 @@ public class PcepClientControllerImpl implements PcepClientController {
                 for (PcepClientListener l : pcepClientListener) {
                     l.clientConnected(pccId);
                 }
+
+                if (PcepFlushTimerMap.get(pccId.ipAddress()) != null) {
+                    PcepFlushTimerMap.remove(pccId.ipAddress());
+                }
+
                 return true;
             }
         }
@@ -376,6 +486,7 @@ public class PcepClientControllerImpl implements PcepClientController {
 
         @Override
         public void removeConnectedClient(PccId pccId) {
+            PcepFlushTimerMap.add(pccId.ipAddress());
 
             connectedClients.remove(pccId);
             for (PcepClientListener l : pcepClientListener) {

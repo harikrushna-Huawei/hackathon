@@ -108,7 +108,7 @@ public class PcepTunnelProviderTest {
                                    new DefaultGroupId(0), TunnelId.valueOf("1"), TunnelName.tunnelName("T123"),
                                    path, annotations);
         controller.getClient(PccId.pccId(IpAddress.valueOf(0xC010101))).setCapability(
-                new ClientCapability(true, true, true, true, true));
+                new ClientCapability(true, true, true, true, true, true, true));
 
         tunnelProvider.setupTunnel(tunnel, path);
 

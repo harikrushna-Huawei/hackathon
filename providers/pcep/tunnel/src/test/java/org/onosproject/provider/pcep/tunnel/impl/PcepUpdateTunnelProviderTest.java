@@ -136,7 +136,7 @@ public class PcepUpdateTunnelProviderTest {
         PcepClientAdapter pc = new PcepClientAdapter();
         pc.init(pccId, PcepVersion.PCEP_1);
         controller.getClient(pccId).setLspAndDelegationInfo(new LspKey(1, (short) 1), true);
-        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true));
+        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true, true, true));
 
         tunnelProvider.updateTunnel(tunnel, path);
         assertThat(tunnelProvider.pcepTunnelApiMapper, not(nullValue()));
@@ -196,7 +196,7 @@ public class PcepUpdateTunnelProviderTest {
         PcepClientAdapter pc = new PcepClientAdapter();
         pc.init(pccId, PcepVersion.PCEP_1);
         controller.getClient(pccId).setLspAndDelegationInfo(new LspKey(1, (short) 1), true);
-        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true));
+        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true, true, true));
 
         tunnelProvider.updateTunnel(tunnel, path);
         assertThat(tunnelProvider.pcepTunnelApiMapper.checkFromTunnelRequestQueue(1), is(false));
@@ -256,7 +256,7 @@ public class PcepUpdateTunnelProviderTest {
         PcepClientAdapter pc = new PcepClientAdapter();
         pc.init(pccId, PcepVersion.PCEP_1);
         controller.getClient(pccId).setLspAndDelegationInfo(new LspKey(1, (short) 1), true);
-        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true));
+        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true, true, true));
 
         tunnelProvider.updateTunnel(tunnel, path);
         assertThat(tunnelProvider.pcepTunnelApiMapper, not(nullValue()));
@@ -316,7 +316,7 @@ public class PcepUpdateTunnelProviderTest {
         PcepClientAdapter pc = new PcepClientAdapter();
         pc.init(pccId, PcepVersion.PCEP_1);
         controller.getClient(pccId).setLspAndDelegationInfo(new LspKey(1, (short) 1), true);
-        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true));
+        controller.getClient(pccId).setCapability(new ClientCapability(true, true, true, true, true, true, true));
 
         tunnelProvider.updateTunnel(tunnel, path);
         assertThat(tunnelProvider.pcepTunnelApiMapper, not(nullValue()));
