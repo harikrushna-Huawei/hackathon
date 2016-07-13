@@ -24,10 +24,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.HashMap;
-
+import java.util.Iterator;
+import java.util.ArrayList;
 import org.onlab.packet.ChassisId;
 import org.onlab.packet.Ip4Address;
 import org.onlab.util.Bandwidth;
+import org.onlab.packet.IpAddress;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -35,6 +37,7 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onosproject.bgp.controller.BgpController;
 import org.onosproject.bgp.controller.BgpDpid;
+import org.onosproject.bgp.controller.BgpId;
 import org.onosproject.bgp.controller.BgpLinkListener;
 import org.onosproject.bgp.controller.BgpNodeListener;
 import org.onosproject.bgpio.exceptions.BgpParseException;
@@ -156,7 +159,7 @@ public class BgpTopologyProvider extends AbstractProvider implements DeviceProvi
     public static final String LSRID = "lsrId";
     public static final String COST = "cost";
     public static final String TE_COST = "teCost";
-
+    public static final String FLOW_PEER = "flowPeer";
     public static final long PSEUDO_PORT = 0xffffffff;
     public static final int DELAY = 2;
     private LabelResourceId beginLabel = labelResourceId(5122);
@@ -230,10 +233,33 @@ public class BgpTopologyProvider extends AbstractProvider implements DeviceProvi
             }
 
             DefaultAnnotations.Builder newBuilder = DefaultAnnotations.builder();
+            BgpAttrRouterIdV4 routerId = null;
 
             newBuilder.set(AnnotationKeys.DRIVER, "l3Device");
             newBuilder.set(AnnotationKeys.TYPE, "L3");
             newBuilder.set(ROUTING_UNIVERSE, Long.toString(nodeNlri.getIdentifier()));
+
+            Iterator<BgpValueType> objListIterator = details.pathAttributes().iterator();
+            while (objListIterator.hasNext()) {
+                BgpValueType subTlv = objListIterator.next();
+                if (subTlv.getType() == LinkStateAttributes.LINKSTATE_ATTRIB_TYPE) {
+                    LinkStateAttributes linkStateAttr = (LinkStateAttributes) subTlv;
+                    Iterator<BgpValueType> linkStateListIterator = linkStateAttr.linkStateAttributes().iterator();
+                    while (linkStateListIterator.hasNext()) {
+                        BgpValueType attribute = linkStateListIterator.next();
+                        if (attribute instanceof BgpAttrRouterIdV4) {
+                            if (controller.connectedPeers()
+                                    .containsKey(BgpId.bgpId(IpAddress.valueOf(((BgpAttrRouterIdV4) attribute)
+                                                                                       .attrRouterId().toInt())))) {
+                                routerId = (BgpAttrRouterIdV4) attribute;
+                            }
+                        }
+                    }
+                }
+            }
+            if (routerId != null) {
+                newBuilder.set(FLOW_PEER, routerId.attrRouterId().toString());
+            }
 
             List<BgpValueType> tlvs = nodeNlri.getLocalNodeDescriptors().getNodedescriptors().getSubTlvs();
             for (BgpValueType tlv : tlvs) {

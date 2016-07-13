@@ -39,6 +39,7 @@ import org.onosproject.bgp.controller.BgpPeer;
 import org.onosproject.bgpio.protocol.flowspec.BgpFlowSpecNlri;
 import org.onosproject.bgpio.protocol.flowspec.BgpFlowSpecRouteKey;
 import org.onosproject.bgpio.types.BgpFsActionReDirect;
+import org.onosproject.bgpio.types.BgpFsActionReDirectToIp;
 import org.onosproject.bgpio.types.BgpFsActionTrafficAction;
 import org.onosproject.bgpio.types.BgpFsActionTrafficMarking;
 import org.onosproject.bgpio.types.BgpFsActionTrafficRate;
@@ -79,6 +80,7 @@ import org.onosproject.flowapi.ExtPrefix;
 import org.onosproject.flowapi.ExtTarget;
 import org.onosproject.flowapi.ExtTcpFlag;
 import org.onosproject.flowapi.ExtTrafficAction;
+import org.onosproject.flowapi.ExtTrafficActionRedirectToIp;
 import org.onosproject.flowapi.ExtTrafficMarking;
 import org.onosproject.flowapi.ExtTrafficRate;
 import org.onosproject.flowapi.ExtTrafficRedirect;
@@ -815,6 +817,7 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
         BgpFsActionTrafficAction action = null;
         BgpFsActionReDirect redirection = null;
         BgpFsActionTrafficMarking marking = null;
+        BgpFsActionReDirectToIp reDirectToIp = null;
         List<BgpValueType> flowSpecAction = new LinkedList<>();
 
         ExtWideCommunityInt wcIntList = null;
@@ -920,6 +923,11 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
                     flowSpecAction.add(marking);
                     flowSpec.setFsActionTlv(flowSpecAction);
                     break;
+                case TRAFFIC_REDIRECT_TO_IP:
+                    reDirectToIp = processTrafficRedirectToIp((ExtTrafficActionRedirectToIp) flow);
+                    flowSpecAction.add(reDirectToIp);
+                    flowSpec.setFsActionTlv(flowSpecAction);
+                    break;
                 case WIDE_COMM_FLAGS:
                     wcIntList = (ExtWideCommunityInt) flow;
                     wcItr = wcIntList.communityInt().listIterator();
@@ -978,6 +986,10 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
         if (peer != null) {
             peer.updateFlowSpec(operType, new BgpFlowSpecRouteKey(name.keyName()), flowSpec, wideCommunity);
         }
+    }
+
+    BgpFsActionReDirectToIp processTrafficRedirectToIp(ExtTrafficActionRedirectToIp flow) {
+        return new BgpFsActionReDirectToIp(flow.ipAddress(), flow.copy());
     }
 
     byte[] processTrafficAction(ExtTrafficAction flow) {
