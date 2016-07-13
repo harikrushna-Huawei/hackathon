@@ -560,7 +560,7 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
 
         log.info("Sending OPEN message to {}", channel.getRemoteAddress()
                 + " Pcc: " + this.thispccId.ipAddress().toString());
-        //log.info("with label db version: " + dbVer);
+
         channel.write(Collections.singletonList(msg));
     }
 

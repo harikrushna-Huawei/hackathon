@@ -281,7 +281,17 @@ public class PcepClientControllerImpl implements PcepClientController {
                                 log.info(" Init label db version for Pcc:"+ pc.getPccId().ipAddress().toString());
                             }
 
+                            // Call packet provider to initiate label DB sync (only if PCECC capable).
+                            if (pc.capability().pceccCapability()) {
+                                pc.setLabelDbSyncStatus(IN_SYNC);
+                                    triggerLabelDbFullSync(pc);
  
+                                PcepLabelDbVersionMap.resetRcvDbVersion(pc.getPccId().id());
+                                log.info("Resetting recv label DB version for PCC {}", pc.getPccId().id().toString());
+                            } else {
+                                // If label db sync is not to be done, handle end of LSPDB sync actions.
+                                agent.analyzeSyncMsgList(pc.getPccId());
+                            }
                             continue;
                         }
                     }
@@ -314,37 +324,13 @@ public class PcepClientControllerImpl implements PcepClientController {
         }
     }
 
-    public void handleLabelDbSyncEnd(PcepClient pc) {
+    public void triggerLabelDbFullSync(PcepClient pc) {
+        log.info("Trigger label DB sync for PCC {}", pc.getPccId().id().toString());
 
-        // Call packet provider to initiate label DB sync (only if PCECC capable).
-        if (pc.capability().pceccCapability()) {
-            pc.setLabelDbSyncStatus(IN_SYNC);
+        pc.initSyncLabelMap();
 
-            // trigger label db sync if db version mismatch or labeldb version is zero
-            if ((PcepLabelDbVersionMap.getDbVersion(pc.getPccId().id()) == 0)
-                || (PcepLabelDbVersionMap.getRcvDbVersion(pc.getPccId().id())
-                    != PcepLabelDbVersionMap.getDbVersion(pc.getPccId().id()))) {
-
-                log.info("Trigger label DB sync for PCC {}", pc.getPccId().id().toString());
-
-                pc.initSyncLabelMap();
-
-                for (PcepPacketListener l : pcepPacketListener) {
-                    l.sendPacketIn(pc.getPccId());
-                }
-            } else {
-                log.info("Avoided label DB sync for PCC {}", pc.getPccId().id().toString());
-
-                // send sync end
-                sendLabelDbSyncEnd(pc);
-            }
-
-            PcepLabelDbVersionMap.resetRcvDbVersion(pc.getPccId().id());
-            log.info("Resetting recv label DB version for PCC {}", pc.getPccId().id().toString());
-
-        } else {
-            // If label db sync is not to be done, handle end of LSPDB sync actions.
-            agent.analyzeSyncMsgList(pc.getPccId());
+        for (PcepPacketListener l : pcepPacketListener) {
+            l.sendPacketIn(pc.getPccId());
         }
     }
 
