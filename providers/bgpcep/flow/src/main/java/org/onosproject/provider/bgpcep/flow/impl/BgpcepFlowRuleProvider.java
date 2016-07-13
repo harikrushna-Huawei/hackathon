@@ -126,7 +126,6 @@ import org.onosproject.pcep.controller.PccId;
 import org.onosproject.pcep.controller.PcepClient;
 import org.onosproject.pcep.controller.PcepClientController;
 import org.onosproject.pcep.controller.PcepSyncStatus;
-import org.onosproject.pcep.controller.impl.PcepLabelDbVersionMap;
 import org.onosproject.pcepio.exceptions.PcepParseException;
 import org.onosproject.pcepio.protocol.PcepEroObject;
 import org.onosproject.pcepio.protocol.PcepFecObjectIPv4;
@@ -419,19 +418,16 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
 
         PcepSrpObject srpObj = getSrpObject(pc, type, bSFlag);
 
-        LinkedList<PcepValueType> optionalTlv = new LinkedList<>();
-        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
-        optionalTlv.add(dbVerTlv);
+
 
         //Global NODE-SID as label object
-        PcepLabelObject labelObject = pc.factory().buildLabelObject()
-                                      .setLabel((int) labelId.labelId())
-                                      .setOptionalTlv(optionalTlv)
-                                      .build();
+        PcepLabelObject.Builder labelObjectBldr = pc.factory().buildLabelObject()
+                                      .setLabel((int) labelId.labelId());
+
 
         PcepLabelMap labelMap = new PcepLabelMap();
         labelMap.setFecObject(fecObject);
-        labelMap.setLabelObject(labelObject);
+        labelMap.setLabelObject(labelObjectBldr.build());
         labelMap.setSrpObject(srpObj);
 
         labelUpdateList.add(pc.factory().buildPcepLabelUpdateObject()
@@ -504,19 +500,15 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
 
         PcepSrpObject srpObj = getSrpObject(pc, type, bSFlag);
 
-        LinkedList<PcepValueType> optionalTlv = new LinkedList<>();
-        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
-        optionalTlv.add(dbVerTlv);
+
 
         //Adjacency label object
-        PcepLabelObject labelObject = pc.factory().buildLabelObject()
-                                      .setLabel((int) labelId.labelId())
-                                      .setOptionalTlv(optionalTlv)
-                                      .build();
+        PcepLabelObject.Builder labelObjectBldr = pc.factory().buildLabelObject()
+                                      .setLabel((int) labelId.labelId());
 
         PcepLabelMap labelMap = new PcepLabelMap();
         labelMap.setFecObject(fecAdjObject);
-        labelMap.setLabelObject(labelObject);
+        labelMap.setLabelObject(labelObjectBldr.build());
         labelMap.setSrpObject(srpObj);
 
         labelUpdateList.add(pc.factory().buildPcepLabelUpdateObject()
@@ -560,8 +552,6 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
 
         optionalTlv.add(NexthopIPv4addressTlv.of((int) portNo));
 
-        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
-        optionalTlv.add(dbVerTlv);
 
         Tunnel tunnel = tunnelService.queryTunnel(tunnelId);
 

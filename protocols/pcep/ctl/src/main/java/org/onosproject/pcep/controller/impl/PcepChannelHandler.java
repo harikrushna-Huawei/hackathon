@@ -543,6 +543,11 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
      */
     private void sendHandshakeOpenMessage() throws IOException, PcepParseException {
         LinkedList<PcepValueType> llAdditionalTlv = null;
+
+        llAdditionalTlv = new LinkedList<PcepValueType>();
+
+        PceccCapabilityTlv pceccTlv = new PceccCapabilityTlv(true);
+        llAdditionalTlv.add(pceccTlv);
         PcepOpenObject pcepOpenobj = factory1.buildOpenObject()
                 .setSessionId(sessionId)
                 .setKeepAliveTime(keepAliveTime)
@@ -572,8 +577,6 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
         boolean pcInstantiationCapability = false;
         boolean labelStackCapability = false;
         boolean srCapability = false;
-        boolean incLblDbVerCapability = false;
-        boolean deltaLblSyncCapability = false;
 
         ListIterator<PcepValueType> listIterator = tlvList.listIterator();
         while (listIterator.hasNext()) {
@@ -585,7 +588,6 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
                 if (((PceccCapabilityTlv) tlv).sBit()) {
                     labelStackCapability = true;
                 }
-
                 break;
             case StatefulPceCapabilityTlv.TYPE:
                 statefulPceCapability = true;
@@ -602,7 +604,7 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
             }
         }
         this.capability = new ClientCapability(pceccCapability, statefulPceCapability, pcInstantiationCapability,
-                labelStackCapability, srCapability, incLblDbVerCapability, deltaLblSyncCapability);
+                labelStackCapability, srCapability, true, true);
     }
 
     /**

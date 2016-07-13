@@ -148,13 +148,13 @@ public class PcepClientControllerImpl implements PcepClientController {
 
     @Override
     public long getLabelDbVersion(PccId pccId) {
-        return PcepLabelDbVersionMap.getDbVersion(pccId.ipAddress());
+        return PcepLabelDbVerManager.getDbVersion(pccId.ipAddress());
     }
 
     @Override
     public void incrLabelDbVersion(PccId pccId) {
-        PcepLabelDbVersionMap.incrDbVersion(pccId.ipAddress());
-        log.info("incrementing label db version: " + PcepLabelDbVersionMap.getDbVersion(pccId.ipAddress())
+        PcepLabelDbVerManager.incrDbVersion(pccId.ipAddress());
+        log.info("incrementing label db version: " + PcepLabelDbVerManager.getDbVersion(pccId.ipAddress())
                          + " for Pcc:" + pccId.ipAddress().toString());
     }
 
@@ -276,8 +276,8 @@ public class PcepClientControllerImpl implements PcepClientController {
                             pc.setLspDbSyncStatus(PcepSyncStatus.SYNCED);
 
                             // Init label db version for this PCC
-                            if (PcepLabelDbVersionMap.getDbVersion(pc.getPccId().id()) == 0) {
-                                PcepLabelDbVersionMap.initDbVersion(pc.getPccId().id());
+                            if (PcepLabelDbVerManager.getDbVersion(pc.getPccId().id()) == 0) {
+                                PcepLabelDbVerManager.initDbVersion(pc.getPccId().id());
                                 log.info(" Init label db version for Pcc:"+ pc.getPccId().ipAddress().toString());
                             }
 
@@ -286,8 +286,6 @@ public class PcepClientControllerImpl implements PcepClientController {
                                 pc.setLabelDbSyncStatus(IN_SYNC);
                                     triggerLabelDbFullSync(pc);
  
-                                PcepLabelDbVersionMap.resetRcvDbVersion(pc.getPccId().id());
-                                log.info("Resetting recv label DB version for PCC {}", pc.getPccId().id().toString());
                             } else {
                                 // If label db sync is not to be done, handle end of LSPDB sync actions.
                                 agent.analyzeSyncMsgList(pc.getPccId());
