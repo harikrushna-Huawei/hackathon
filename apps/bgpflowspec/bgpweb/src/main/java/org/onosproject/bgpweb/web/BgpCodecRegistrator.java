@@ -39,7 +39,6 @@ public class BgpCodecRegistrator {
     @Activate
     public void activate() {
         codecService.registerCodec(ExtFlowTypes.class, new BgpFlowExtensionCodec());
-        System.out.print("BgpCodecRegistrator started");
         log.info("Started");
     }
 
