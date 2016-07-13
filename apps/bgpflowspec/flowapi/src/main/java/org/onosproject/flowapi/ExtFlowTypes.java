@@ -89,7 +89,7 @@ public interface ExtFlowTypes {
         WIDE_COMM_PARAMETER(20),
 
         /** Traffic filtering actions. */
-
+        TRAFFIC_REDIRECT_TO_IP(0x800),
         TRAFFIC_RATE(0x8006),
         TRAFFIC_ACTION(0x8007),
         TRAFFIC_REDIRECT(0x8008),

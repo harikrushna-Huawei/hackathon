@@ -34,6 +34,7 @@ import org.onosproject.flowapi.DefaultExtTrafficAction;
 import org.onosproject.flowapi.DefaultExtTrafficMarking;
 import org.onosproject.flowapi.DefaultExtTrafficRate;
 import org.onosproject.flowapi.DefaultExtTrafficRedirect;
+import org.onosproject.flowapi.DefaultExtTrafficRedirectToIp;
 import org.onosproject.flowapi.DefaultExtWideCommunityInt;
 import org.onosproject.flowapi.ExtDscpValue;
 import org.onosproject.flowapi.ExtFlowTypes;
@@ -48,6 +49,7 @@ import org.onosproject.flowapi.ExtPrefix;
 import org.onosproject.flowapi.ExtTarget;
 import org.onosproject.flowapi.ExtTcpFlag;
 import org.onosproject.flowapi.ExtTrafficAction;
+import org.onosproject.flowapi.ExtTrafficActionRedirectToIp;
 import org.onosproject.flowapi.ExtTrafficMarking;
 import org.onosproject.flowapi.ExtTrafficRate;
 import org.onosproject.flowapi.ExtTrafficRedirect;
@@ -108,6 +110,7 @@ public final class DecodeBgpFlowExtnCodecHelper {
         decoderMap.put(ExtFlowTypes.ExtType.TRAFFIC_ACTION.name(), new BgpTrafficActionDecode());
         decoderMap.put(ExtFlowTypes.ExtType.TRAFFIC_REDIRECT.name(), new BgpTrafficRedirectDecode());
         decoderMap.put(ExtFlowTypes.ExtType.TRAFFIC_MARKING.name(), new BgpTrafficMarkingDecode());
+        decoderMap.put(ExtFlowTypes.ExtType.TRAFFIC_REDIRECT_TO_IP.name(), new BgpTrafficActionReDirectToIpDecode());
 
         decoderMap.put(ExtFlowTypes.ExtType.WIDE_COMM_FLAGS.name(), new BgpWcommFlagsDecode());
         decoderMap.put(ExtFlowTypes.ExtType.WIDE_COMM_HOP_COUNT.name(), new BgpWcommHopCountDecode());
@@ -448,6 +451,45 @@ public final class DecodeBgpFlowExtnCodecHelper {
         }
     }
 
+    /** Traffic action decoder.*/
+    private class BgpTrafficActionReDirectToIpDecode implements ExtensionDecoder {
+        @Override
+        public ExtFlowTypes decodeExtension(ObjectNode json) {
+            if (json == null || !json.isObject()) {
+                return null;
+            }
+
+            ExtTrafficActionRedirectToIp.Builder resultBuilder = new DefaultExtTrafficRedirectToIp.Builder();
+
+            String rate = nullIsIllegal(json.get(BgpFlowExtensionCodec.TRAFFIC_REDIRECT_TO_IP),
+                                        BgpFlowExtensionCodec.TRAFFIC_REDIRECT_TO_IP + MISSING_MEMBER_MESSAGE).asText();
+
+            String[] commaPart = rate.split(",");
+            String[] valuePart = commaPart[0].split("=");
+
+            if (valuePart[0].matches(BgpFlowExtensionCodec.TRAFFIC_ACTION_REDIRECT_TO_IP)) {
+                String ipAddress = valuePart[1].trim();
+                resultBuilder.setIpAddress(IpAddress.valueOf(ipAddress));
+            } else {
+                nullIsIllegal(valuePart[0],
+                              BgpFlowExtensionCodec.TRAFFIC_ACTION_REDIRECT_TO_IP + MISSING_MEMBER_MESSAGE);
+            }
+
+            valuePart = commaPart[1].split("=");
+            if (valuePart[0].matches(BgpFlowExtensionCodec.TRAFFIC_ACTION_REDIRECT_COPY)) {
+                Short copy = Short.parseShort(valuePart[1].trim());
+                resultBuilder.setCopy(copy);
+            } else {
+                nullIsIllegal(valuePart[0],
+                              BgpFlowExtensionCodec.TRAFFIC_ACTION_REDIRECT_COPY + MISSING_MEMBER_MESSAGE);
+            }
+
+            resultBuilder.setType(ExtFlowTypes.ExtType.TRAFFIC_REDIRECT_TO_IP);
+
+            return resultBuilder.build();
+        }
+    }
+
     /** Traffic redirect decoder.*/
     private class BgpTrafficRedirectDecode implements ExtensionDecoder {
         @Override
@@ -541,7 +583,9 @@ public final class DecodeBgpFlowExtnCodecHelper {
 
             String wideComm = nullIsIllegal(json.get(BgpFlowExtensionCodec.WIDE_COMM_COMMUNITY),
                     BgpFlowExtensionCodec.WIDE_COMM_COMMUNITY + MISSING_MEMBER_MESSAGE).asText();
-            resultBuilder.setwCommInt(Integer.valueOf(wideComm));
+            Long wideCommLong = Long.decode(wideComm);
+            resultBuilder.setwCommInt(wideCommLong.intValue());
+            
             resultBuilder.setType(ExtFlowTypes.ExtType.WIDE_COMM_COMMUNITY);
 
             return resultBuilder.build();

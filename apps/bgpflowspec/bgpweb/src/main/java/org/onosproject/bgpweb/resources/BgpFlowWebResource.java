@@ -190,6 +190,8 @@ public class BgpFlowWebResource extends AbstractWebResource {
                 case TRAFFIC_REDIRECT:
                     nonRpd = true;
                     break;
+                case TRAFFIC_REDIRECT_TO_IP:
+                    break;
                 case TRAFFIC_MARKING:
                     nonRpd = true;
                     break;
@@ -242,9 +244,7 @@ public class BgpFlowWebResource extends AbstractWebResource {
         }
 
         /** If it is rpd then either of these two or both should be present.*/
-        if (!wcTarget && !wcETarget) {
-            rpd = false;
-        }
+
 
         if (!handleRpdLocalPerf(list)) {
             return false;

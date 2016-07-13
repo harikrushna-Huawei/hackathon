@@ -44,6 +44,7 @@ public final class BgpFlowExtensionCodec extends JsonCodec<ExtFlowTypes> {
     protected static final String TRAFFIC_RATE = "trafficRate";
     protected static final String TRAFFIC_ACTION = "trafficAction";
     protected static final String TRAFFIC_REDIRECTION = "trafficRedirection";
+    protected static final String TRAFFIC_REDIRECT_TO_IP = "redirectToIp";
     protected static final String TRAFFIC_MARKING = "trafficMarking";
 
     protected static final String TRAFFIC_RATE_ASN = "asn";
@@ -51,7 +52,8 @@ public final class BgpFlowExtensionCodec extends JsonCodec<ExtFlowTypes> {
     protected static final String TRAFFIC_ACTION_TERMINAL = "terminal";
     protected static final String TRAFFIC_ACTION_SAMPLE = "sample";
     protected static final String TRAFFIC_ACTION_RPD = "rpd";
-
+    protected static final String TRAFFIC_ACTION_REDIRECT_TO_IP = "ipAddress";
+    protected static final String TRAFFIC_ACTION_REDIRECT_COPY = "copy";
     protected static final String WIDE_COMM_FLAGS = "widecommunityFlags";
     protected static final String WIDE_COMM_HOP_COUNT = "widecommunityHopCount";
     protected static final String WIDE_COMM_COMMUNITY = "widecommunityCommunity";

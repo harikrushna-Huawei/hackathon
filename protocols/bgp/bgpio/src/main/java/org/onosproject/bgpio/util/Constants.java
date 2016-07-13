@@ -77,6 +77,7 @@ public final class Constants {
     public static final short BGP_FLOWSPEC_ACTION_TRAFFIC_ACTION = (short) 0x8007;
     public static final short BGP_FLOWSPEC_ACTION_TRAFFIC_REDIRECT = (short) 0x8008;
     public static final short BGP_FLOWSPEC_ACTION_TRAFFIC_MARKING = (short) 0x8009;
+    public static final short BGP_FLOWSPEC_ACTION_TRAFFIC_REDIRECT_TO_IP = (short) 0x0800;
 
     public static final byte BGP_FLOW_SPEC_LEN_MASK = 0x30;
     public static final byte BGP_FLOW_SPEC_END_OF_LIST_MASK = (byte) 0x80;

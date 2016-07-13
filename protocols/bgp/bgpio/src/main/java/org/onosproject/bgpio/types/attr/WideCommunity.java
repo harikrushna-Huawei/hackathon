@@ -18,6 +18,7 @@ package org.onosproject.bgpio.types.attr;
 import com.google.common.base.MoreObjects;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.onlab.packet.IpAddress;
 import org.onosproject.bgpio.exceptions.BgpParseException;
 import org.onosproject.bgpio.types.BgpErrorType;
@@ -46,7 +47,7 @@ public class WideCommunity implements BgpValueType {
     public static final byte TYPE = (byte) 129;
     public static final short LENGTH = 4;
     public static final byte TYPE_LENGTH_SIZE = 3;
-    public static final byte FLAGS = (byte) 0x90;
+    public static final byte FLAGS = (byte) 0xC0; //(byte) 0x90;
     private WideCommunityAttrHeader wideCommunityHeader;
     private int community;
     private int localAsn;
@@ -225,64 +226,88 @@ public class WideCommunity implements BgpValueType {
         return false;
     }
 
-    @Override
-    public int write(ChannelBuffer c) {
+    private ChannelBuffer writeWideComunityInfo() {
         int iTargetLenIndex;
         int length;
-        int iLenStartIndex = c.writerIndex();
-        c.writeByte(FLAGS); // TODO: update flag value
-        c.writeByte(TYPE);
+        ChannelBuffer tmpBuff = ChannelBuffers.dynamicBuffer();
 
-        int iLengthIndex = c.writerIndex();
-        c.writeShort(0);
+        wideCommunityHeader.write(tmpBuff);
 
-        wideCommunityHeader.write(c);
+        int iComLengthIndex = tmpBuff.writerIndex();
+        tmpBuff.writeShort(0);
 
-        int iComLengthIndex = c.writerIndex();
-        c.writeShort(0);
-
-        c.writeInt(community);
-        c.writeInt(localAsn);
-        c.writeInt(contextAsn);
+        tmpBuff.writeInt(community);
+        tmpBuff.writeInt(localAsn);
+        tmpBuff.writeInt(contextAsn);
 
         if (target() != null) {
-            c.writeByte(WideCommunityTarget.TYPE);
-            iTargetLenIndex = c.writerIndex();
-            c.writeShort(0); // length
+            tmpBuff.writeByte(WideCommunityTarget.TYPE);
+            iTargetLenIndex = tmpBuff.writerIndex();
+            tmpBuff.writeShort(0); // length
 
-            target.write(c);
+            target.write(tmpBuff);
 
-            length = c.writerIndex() - iTargetLenIndex;
-            c.setShort(iTargetLenIndex, (short) (length - 2));
+            length = tmpBuff.writerIndex() - iTargetLenIndex;
+            tmpBuff.setShort(iTargetLenIndex, (short) (length - 2));
         }
 
         if (excludeTarget() != null) {
-            c.writeByte(WideCommunityExcludeTarget.TYPE);
-            iTargetLenIndex = c.writerIndex();
-            c.writeShort(0); // length
+            tmpBuff.writeByte(WideCommunityExcludeTarget.TYPE);
+            iTargetLenIndex = tmpBuff.writerIndex();
+            tmpBuff.writeShort(0); // length
 
-            excludeTarget.write(c);
+            excludeTarget.write(tmpBuff);
 
-            length = c.writerIndex() - iTargetLenIndex;
-            c.setShort(iTargetLenIndex, (short) (length - 2));
+            length = tmpBuff.writerIndex() - iTargetLenIndex;
+            tmpBuff.setShort(iTargetLenIndex, (short) (length - 2));
         }
 
         if (parameter() != null) {
-            c.writeByte(WideCommunityParameter.TYPE);
-            iTargetLenIndex = c.writerIndex();
-            c.writeShort(0); // length
+            tmpBuff.writeByte(WideCommunityParameter.TYPE);
+            iTargetLenIndex = tmpBuff.writerIndex();
+            tmpBuff.writeShort(0); // length
 
-            parameter.write(c);
+            parameter.write(tmpBuff);
 
-            length = c.writerIndex() - iTargetLenIndex;
-            c.setShort(iTargetLenIndex, (short) (length - 2));
+            length = tmpBuff.writerIndex() - iTargetLenIndex;
+            tmpBuff.setShort(iTargetLenIndex, (short) (length - 2));
         }
 
-        length = c.writerIndex() - iComLengthIndex;
-        c.setShort(iComLengthIndex, (short) (length - 2));
+        length = tmpBuff.writerIndex() - iComLengthIndex;
+        tmpBuff.setShort(iComLengthIndex, (short) (length - 2));
 
-        length = c.writerIndex() - iLengthIndex;
-        c.setShort(iLengthIndex, (short) (length - 2));
+        return tmpBuff;
+    }
+
+    @Override
+    public int write(ChannelBuffer c) {
+        int length;
+        int iLenStartIndex = c.writerIndex();
+        int iLengthIndex;
+        ChannelBuffer community = writeWideComunityInfo();
+        if (community.readableBytes() > 240) {
+            c.writeByte(0x90);
+            c.writeByte(TYPE);
+
+            iLengthIndex = c.writerIndex();
+            c.writeShort(0);
+
+            c.writeBytes(community);
+
+            length = c.writerIndex() - iLengthIndex;
+            c.setShort(iLengthIndex, (short) (length - 2));
+        } else {
+            c.writeByte(0xC0);
+            c.writeByte(TYPE);
+
+            iLengthIndex = c.writerIndex();
+            c.writeByte(0);
+
+            c.writeBytes(community);
+
+            length = c.writerIndex() - iLengthIndex;
+            c.setByte(iLengthIndex, (byte) (length - 1));
+        }
 
         return c.writerIndex() - iLenStartIndex;
     }
