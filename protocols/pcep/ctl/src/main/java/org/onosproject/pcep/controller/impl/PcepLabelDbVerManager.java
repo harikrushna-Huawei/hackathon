@@ -10,13 +10,17 @@ import java.util.Map;
 /**
  * Created by root1 on 29/6/16.
  */
-class PcepLabelDbVerManager {
+final class PcepLabelDbVerManager {
 
-    final static long LABEL_DB_INIT_VERSION = 0;
+    static final long LABEL_DB_INIT_VERSION = 0;
     private static final Logger log = LoggerFactory.getLogger(PcepLabelDbVerManager.class);
 
     private static Map<IpAddress, Long> localDbVerMap = new HashMap<IpAddress, Long>();
     private static Map<IpAddress, Long> rcvDbVerMap = new HashMap<IpAddress, Long>();
+
+    private PcepLabelDbVerManager() {
+
+    }
 
     public static void initDbVersion(IpAddress pccIp) {
         log.info("init label db version for Pcc: " + pccIp.toString());

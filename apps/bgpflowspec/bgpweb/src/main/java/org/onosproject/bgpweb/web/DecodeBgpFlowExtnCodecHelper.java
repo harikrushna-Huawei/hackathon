@@ -585,7 +585,7 @@ public final class DecodeBgpFlowExtnCodecHelper {
                     BgpFlowExtensionCodec.WIDE_COMM_COMMUNITY + MISSING_MEMBER_MESSAGE).asText();
             Long wideCommLong = Long.decode(wideComm);
             resultBuilder.setwCommInt(wideCommLong.intValue());
-            
+
             resultBuilder.setType(ExtFlowTypes.ExtType.WIDE_COMM_COMMUNITY);
 
             return resultBuilder.build();

@@ -143,7 +143,6 @@ import org.onosproject.pcepio.protocol.PcepUpdateRequest;
 import org.onosproject.pcepio.types.IPv4SubObject;
 import org.onosproject.pcepio.types.NexthopIPv4addressTlv;
 import org.onosproject.pcepio.types.PathSetupTypeTlv;
-import org.onosproject.pcepio.types.PcepLabelDbVerTlv;
 import org.onosproject.pcepio.types.PcepLabelDownload;
 import org.onosproject.pcepio.types.PcepLabelMap;
 import org.onosproject.pcepio.types.PcepValueType;
@@ -243,7 +242,7 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
         }
     }
 
-    synchronized private void processRule(FlowRule flowRule, PcepFlowType type) {
+    private synchronized void processRule(FlowRule flowRule, PcepFlowType type) {
         int seqNum = 0;
 
         TrafficSelector selector = flowRule.selector();
@@ -278,8 +277,7 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
                 activeSeqNum = pc.getSeqNum();
                 //log.info("Current seq num: " + activeSeqNum);
             }
-        }
-        else {
+        } else {
             innerProcessRule(flowRule, type);
         }
     }

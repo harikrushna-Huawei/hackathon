@@ -132,8 +132,6 @@ public class PcepClientAdapter implements PcepClient {
 
     }
 
-    ;
-
     @Override
     public final String getStringId() {
         return this.pccId.toString();

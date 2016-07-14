@@ -41,7 +41,8 @@ public class ClientCapability {
      * @param srCapability represents SR capability
      */
     public ClientCapability(boolean pceccCapability, boolean statefulPceCapability, boolean pcInstantiationCapability,
-            boolean labelStackCapability, boolean srCapability, boolean incLabelDbVersion, boolean deltaLabelSyncCapability) {
+            boolean labelStackCapability, boolean srCapability,
+            boolean incLabelDbVersion, boolean deltaLabelSyncCapability) {
         this.pceccCapability = pceccCapability;
         this.statefulPceCapability = statefulPceCapability;
         this.pcInstantiationCapability = pcInstantiationCapability;

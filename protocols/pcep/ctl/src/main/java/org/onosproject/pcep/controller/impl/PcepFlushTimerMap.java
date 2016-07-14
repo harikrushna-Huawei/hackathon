@@ -14,14 +14,17 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by root1 on 29/6/16.
  */
-public enum PcepFlushTimerMap {
-    INSTANCE;
+final class PcepFlushTimerMap {
 
-    final static long FLUSH_TIMER_INTERVAL = 5;
+    static final long FLUSH_TIMER_INTERVAL = 5;
 
     private static final Logger log = LoggerFactory.getLogger(PcepFlushTimerMap.class);
     private static Map<IpAddress, ScheduledExecutorService> flushTimerMap =
                                                 new HashMap<IpAddress, ScheduledExecutorService>();
+
+    private PcepFlushTimerMap() {
+
+    }
 
     public static void add(IpAddress pccIp) {
         // remove timer if exists already
@@ -50,8 +53,9 @@ public enum PcepFlushTimerMap {
     }
 
     public static void cleanUp() {
-        for(Iterator<Map.Entry<IpAddress, ScheduledExecutorService>> it = flushTimerMap.entrySet().iterator();
-                    it.hasNext(); ) {
+        Iterator<Map.Entry<IpAddress, ScheduledExecutorService>> it = flushTimerMap.entrySet().iterator();
+
+        while (it.hasNext()) {
             Map.Entry<IpAddress, ScheduledExecutorService> entry = it.next();
             entry.getValue().shutdown();
             it.remove();

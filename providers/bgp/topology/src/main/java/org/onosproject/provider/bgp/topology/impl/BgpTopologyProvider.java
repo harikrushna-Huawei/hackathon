@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.ArrayList;
 import org.onlab.packet.ChassisId;
 import org.onlab.packet.Ip4Address;
 import org.onlab.util.Bandwidth;

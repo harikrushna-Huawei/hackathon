@@ -68,7 +68,6 @@ import org.onosproject.pcepio.protocol.PcepMessage;
 import org.onosproject.pcepio.protocol.PcepReportMsg;
 import org.onosproject.pcepio.protocol.PcepSrpObject;
 import org.onosproject.pcepio.protocol.PcepStateReport;
-import org.onosproject.pcepio.protocol.PcepType;
 import org.onosproject.pcepio.types.PcepLabelMap;
 import org.onosproject.pcepio.types.PcepValueType;
 import org.onosproject.pcepio.types.StatefulIPv4LspIdentifiersTlv;
@@ -278,15 +277,14 @@ public class PcepClientControllerImpl implements PcepClientController {
                             // Init label db version for this PCC
                             if (PcepLabelDbVerManager.getDbVersion(pc.getPccId().id()) == 0) {
                                 PcepLabelDbVerManager.initDbVersion(pc.getPccId().id());
-                                log.info(" Init label db version for Pcc:"+ pc.getPccId().ipAddress().toString());
+                                log.info(" Init label db version for Pcc:" + pc.getPccId().ipAddress().toString());
                             }
 
                             // Call packet provider to initiate label DB sync (only if PCECC capable).
                             if (pc.capability().pceccCapability()) {
                                 pc.setLabelDbSyncStatus(IN_SYNC);
                                     triggerLabelDbFullSync(pc);
- 
-                            } else {
+                             } else {
                                 // If label db sync is not to be done, handle end of LSPDB sync actions.
                                 agent.analyzeSyncMsgList(pc.getPccId());
                             }

@@ -335,7 +335,8 @@ public final class PceccSrTeBeHandler {
         log.debug("Allocated adjacency label {} to a link {}.", labelId.toString(), link.toString());
 
         // Push adjacency label to device
-        installAdjLabelRule(srcDeviceId, labelId, link.src().port(), link.dst().port(), Objective.Operation.ADD, seqNum);
+        installAdjLabelRule(srcDeviceId, labelId, link.src().port(), link.dst().port(),
+                            Objective.Operation.ADD, seqNum);
 
         // Save in store
         pceStore.addAdjLabel(link, labelId);
