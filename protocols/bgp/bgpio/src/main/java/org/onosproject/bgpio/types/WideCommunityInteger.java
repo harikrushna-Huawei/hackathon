@@ -30,7 +30,7 @@ import java.util.Objects;
  * Provides implementation of BGP wide community integer subtlv.
  */
 public class WideCommunityInteger implements BgpValueType {
-    public static final short TYPE = 4;
+    public static final byte TYPE = 4;
     private List<Integer> integer;
 
     /**

@@ -23,6 +23,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.onosproject.bgpio.exceptions.BgpParseException;
 import org.onosproject.bgpio.types.As4Path;
 import org.onosproject.bgpio.types.AsPath;
+import org.onosproject.bgpio.types.BgpCommunity;
 import org.onosproject.bgpio.types.BgpErrorType;
 import org.onosproject.bgpio.types.BgpExtendedCommunity;
 import org.onosproject.bgpio.types.BgpValueType;
@@ -63,6 +64,7 @@ public class BgpPathAttributes {
     public static final int MPREACHNLRI_TYPE = 14;
     public static final int MPUNREACHNLRI_TYPE = 15;
     public static final int EXTENDED_COMMUNITY_TYPE = 16;
+    public static final int COMMUNITY_TYPE = 8;
 
     private final List<BgpValueType> pathAttribute;
 
@@ -150,6 +152,9 @@ public class BgpPathAttributes {
             case EXTENDED_COMMUNITY_TYPE:
                 pathAttribute = BgpExtendedCommunity.read(cb);
                 break;
+            case COMMUNITY_TYPE:
+                pathAttribute = BgpCommunity.read(cb);
+                break;
             case WideCommunity.TYPE:
                 pathAttribute = WideCommunity.read(cb);
                 break;
@@ -217,6 +222,10 @@ public class BgpPathAttributes {
             case Constants.BGP_EXTENDED_COMMUNITY:
                 BgpExtendedCommunity extendedCommunity = (BgpExtendedCommunity) attr;
                 extendedCommunity.write(cb);
+                break;
+            case Constants.BGP_COMMUNITY:
+                BgpCommunity community = (BgpCommunity) attr;
+                community.write(cb);
                 break;
             case WideCommunity.TYPE:
                 WideCommunity wideCommunity = (WideCommunity) attr;

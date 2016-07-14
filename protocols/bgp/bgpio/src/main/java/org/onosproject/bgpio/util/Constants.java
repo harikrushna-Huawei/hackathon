@@ -59,6 +59,7 @@ public final class Constants {
     public static final int RESERVED = 0x40;
 
     public static final byte BGP_EXTENDED_COMMUNITY = 0x10;
+    public static final byte BGP_COMMUNITY = 0x08;
 
     public static final byte BGP_FLOWSPEC_DST_PREFIX = 0x01;
     public static final byte BGP_FLOWSPEC_SRC_PREFIX = 0x02;
