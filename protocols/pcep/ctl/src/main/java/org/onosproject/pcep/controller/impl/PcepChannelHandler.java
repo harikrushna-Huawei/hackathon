@@ -55,6 +55,7 @@ import org.onosproject.pcepio.protocol.PcepVersion;
 import org.onosproject.pcepio.types.IPv4RouterIdOfLocalNodeSubTlv;
 import org.onosproject.pcepio.types.NodeAttributesTlv;
 import org.onosproject.pcepio.types.PceccCapabilityTlv;
+import org.onosproject.pcepio.types.PcepLabelDbVerTlv;
 import org.onosproject.pcepio.types.SrPceCapabilityTlv;
 import org.onosproject.pcepio.types.StatefulPceCapabilityTlv;
 import org.onosproject.pcepio.types.PcepErrorDetailInfo;
@@ -179,6 +180,7 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
                      * We always maintain session information based on LSR ids.
                      * The socket IP is stored in channel.
                      */
+                    PcepLabelDbVerTlv dbVerTlv = null;
                     LinkedList<PcepValueType> optionalTlvs = pOpenmsg.getPcepOpenObject().getOptionalTlv();
                     if (optionalTlvs != null) {
                         for (PcepValueType optionalTlv : optionalTlvs) {
@@ -198,7 +200,9 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
                                 continue;
                             }
 
-
+                            if (optionalTlv instanceof PcepLabelDbVerTlv) {
+                                dbVerTlv = (PcepLabelDbVerTlv) optionalTlv;
+                            }
                         }
                     }
 
@@ -210,6 +214,12 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
 
                         final InetSocketAddress inetAddress = (InetSocketAddress) address;
                         h.thispccId = PccId.pccId(IpAddress.valueOf(inetAddress.getAddress()));
+                    }
+
+                    if (dbVerTlv != null) {
+                        PcepLabelDbVerManager.setRcvDbVersion(h.thispccId.ipAddress(), dbVerTlv.getLong());
+                        log.info("Received label db version:" + dbVerTlv.getLong() + "for Pcc: "
+                                         + h.thispccId.ipAddress().toString());
                     }
 
                     h.sendHandshakeOpenMessage();
@@ -542,12 +552,21 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
      * @throws IOException,PcepParseException
      */
     private void sendHandshakeOpenMessage() throws IOException, PcepParseException {
+
         LinkedList<PcepValueType> llAdditionalTlv = null;
 
         llAdditionalTlv = new LinkedList<PcepValueType>();
 
         PceccCapabilityTlv pceccTlv = new PceccCapabilityTlv(true);
+
+        pceccTlv.setIBit(true);
+
         llAdditionalTlv.add(pceccTlv);
+
+        long dbVer = PcepLabelDbVerManager.getDbVersion(this.thispccId.ipAddress());
+        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(dbVer);
+        llAdditionalTlv.add(dbVerTlv);
+
         PcepOpenObject pcepOpenobj = factory1.buildOpenObject()
                 .setSessionId(sessionId)
                 .setKeepAliveTime(keepAliveTime)
@@ -565,7 +584,7 @@ class PcepChannelHandler extends IdleStateAwareChannelHandler {
 
         log.info("Sending OPEN message to {}", channel.getRemoteAddress()
                 + " Pcc: " + this.thispccId.ipAddress().toString());
-
+        log.info("with label db version: " + dbVer);
         channel.write(Collections.singletonList(msg));
     }
 

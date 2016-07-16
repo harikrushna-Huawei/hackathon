@@ -143,6 +143,7 @@ import org.onosproject.pcepio.protocol.PcepUpdateRequest;
 import org.onosproject.pcepio.types.IPv4SubObject;
 import org.onosproject.pcepio.types.NexthopIPv4addressTlv;
 import org.onosproject.pcepio.types.PathSetupTypeTlv;
+import org.onosproject.pcepio.types.PcepLabelDbVerTlv;
 import org.onosproject.pcepio.types.PcepLabelDownload;
 import org.onosproject.pcepio.types.PcepLabelMap;
 import org.onosproject.pcepio.types.PcepValueType;
@@ -418,12 +419,17 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
 
         PcepSrpObject srpObj = getSrpObject(pc, type, bSFlag);
 
-
+        //to be removed for hackathon
+        LinkedList<PcepValueType> optionalTlv = new LinkedList<>();
+        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
+        optionalTlv.add(dbVerTlv);
 
         //Global NODE-SID as label object
         PcepLabelObject.Builder labelObjectBldr = pc.factory().buildLabelObject()
                                       .setLabel((int) labelId.labelId());
 
+        //to be removed for hackathon
+        labelObjectBldr.setOptionalTlv(optionalTlv);
 
         PcepLabelMap labelMap = new PcepLabelMap();
         labelMap.setFecObject(fecObject);
@@ -500,11 +506,17 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
 
         PcepSrpObject srpObj = getSrpObject(pc, type, bSFlag);
 
-
+        //to be removed for hackathon
+        LinkedList<PcepValueType> optionalTlv = new LinkedList<>();
+        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
+        optionalTlv.add(dbVerTlv);
 
         //Adjacency label object
         PcepLabelObject.Builder labelObjectBldr = pc.factory().buildLabelObject()
                                       .setLabel((int) labelId.labelId());
+
+        //to be removed for hackathon
+        labelObjectBldr.setOptionalTlv(optionalTlv);
 
         PcepLabelMap labelMap = new PcepLabelMap();
         labelMap.setFecObject(fecAdjObject);
@@ -552,6 +564,9 @@ public class BgpcepFlowRuleProvider extends AbstractProvider
 
         optionalTlv.add(NexthopIPv4addressTlv.of((int) portNo));
 
+        //to be removed for hackathon
+        PcepLabelDbVerTlv dbVerTlv = new PcepLabelDbVerTlv(pcepController.getLabelDbVersion(pc.getPccId()));
+        optionalTlv.add(dbVerTlv);
 
         Tunnel tunnel = tunnelService.queryTunnel(tunnelId);
 

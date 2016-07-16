@@ -30,13 +30,13 @@ public class PceccCapabilityTlv implements PcepValueType {
 
     /*          PCECC CAPABILITY TLV
      * Reference : draft-zhao-pce-pcep-extension-for-pce-controller-03, section-7.1.1
-
+                   draft-palle-pce-controller-labeldb-sync-00, section-5.2
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |               Type=[TBD]      |            Length=4           |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                             Flags                           |S|
+   |                             Flags                         |I|S|
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
      */
@@ -46,8 +46,10 @@ public class PceccCapabilityTlv implements PcepValueType {
     public static final short LENGTH = 4;
     public static final int SET = 1;
     public static final byte SBIT_CHECK = 0x01;
+    public static final byte IBIT_CHECK = 0x02;
 
     private final boolean sBit;
+    private boolean iBit;
 
     private final int rawValue;
     private final boolean isRawValueSet;
@@ -62,6 +64,7 @@ public class PceccCapabilityTlv implements PcepValueType {
         this.isRawValueSet = true;
 
         sBit = (rawValue & SBIT_CHECK) == SBIT_CHECK;
+        iBit = (rawValue & IBIT_CHECK) == IBIT_CHECK;
     }
 
     /**
@@ -90,6 +93,10 @@ public class PceccCapabilityTlv implements PcepValueType {
         return PcepVersion.PCEP_1;
     }
 
+    public void setIBit(boolean iBit) {
+        this.iBit = iBit;
+    }
+
     /**
      * Returns sBit.
      *
@@ -97,6 +104,15 @@ public class PceccCapabilityTlv implements PcepValueType {
      */
     public boolean sBit() {
         return sBit;
+    }
+
+    /**
+     * Returns iBit.
+     *
+     * @return iBit I bit
+     */
+    public boolean iBit() {
+        return iBit;
     }
 
     /**
@@ -123,7 +139,7 @@ public class PceccCapabilityTlv implements PcepValueType {
         if (isRawValueSet) {
             return Objects.hash(rawValue);
         } else {
-            return Objects.hash(sBit);
+            return Objects.hash(sBit, iBit);
         }
     }
 
@@ -137,7 +153,10 @@ public class PceccCapabilityTlv implements PcepValueType {
             if (isRawValueSet) {
                 return Objects.equals(this.rawValue, other.rawValue);
             } else {
-                return Objects.equals(this.sBit, other.sBit);
+                if ((Objects.equals(this.sBit, other.sBit))
+                    && (Objects.equals(this.iBit, other.iBit))) {
+                    return true;
+                }
             }
         }
         return false;
@@ -155,6 +174,10 @@ public class PceccCapabilityTlv implements PcepValueType {
             if (sBit) {
                 temp = temp | SBIT_CHECK;
             }
+            if (iBit) {
+                temp = temp | IBIT_CHECK;
+            }
+
             c.writeInt(temp);
         }
         return c.writerIndex() - iLenStartIndex;

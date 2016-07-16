@@ -283,11 +283,30 @@ public class PcepClientControllerImpl implements PcepClientController {
                             // Call packet provider to initiate label DB sync (only if PCECC capable).
                             if (pc.capability().pceccCapability()) {
                                 pc.setLabelDbSyncStatus(IN_SYNC);
+
+                                // trigger label db sync if db version mismatch or labeldb version is zero
+                                if ((PcepLabelDbVerManager.getDbVersion(pc.getPccId().id()) == 0)
+                                        || (PcepLabelDbVerManager.getRcvDbVersion(pc.getPccId().id())
+                                            != PcepLabelDbVerManager.getDbVersion(pc.getPccId().id()))) {
+
                                     triggerLabelDbFullSync(pc);
-                             } else {
+                                } else {
+
+                                    // TODO : should be removed for PCECC hackathon
+                                    log.info("Avoided label DB sync for PCC {}", pc.getPccId().id().toString());
+
+                                    // send sync end
+                                    sendLabelDbSyncEnd(pc);
+                                }
+
+                                PcepLabelDbVerManager.resetRcvDbVersion(pc.getPccId().id());
+                                log.info("Resetting recv label DB version for PCC {}", pc.getPccId().id().toString());
+
+                            } else {
                                 // If label db sync is not to be done, handle end of LSPDB sync actions.
                                 agent.analyzeSyncMsgList(pc.getPccId());
                             }
+
                             continue;
                         }
                     }
