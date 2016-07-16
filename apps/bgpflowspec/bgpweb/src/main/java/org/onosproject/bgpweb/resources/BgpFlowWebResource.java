@@ -92,9 +92,9 @@ public class BgpFlowWebResource extends AbstractWebResource {
 
             list = codec(ExtFlowTypes.class).decode((ArrayNode) flow, this);
 
-            if (!validateRpd(list)) {
+            /*if (!validateRpd(list)) {
                 return Response.status(NOT_ACCEPTABLE).entity(Boolean.FALSE.toString()).build();
-            }
+            }*/
 
             container = new ExtFlowContainer(list);
             container.setDeviceId(devId);
